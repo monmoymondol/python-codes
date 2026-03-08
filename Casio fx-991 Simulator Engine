@@ -1,0 +1,207 @@
+import math
+import cmath
+import random
+import numpy as np
+import scipy.integrate as integrate
+import scipy.stats as stats
+
+class CasioSimulator:
+    def __init__(self):
+        # Basic Arithmetic & Memory: 9-variable storage system
+        self.memory = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'X': 0, 'Y': 0, 'M': 0}
+        self.angle_mode = 'DEG' # Can be 'DEG' or 'RAD'
+
+    # -----------------------------------------
+    # 1. Basic Arithmetic & Memory
+    # -----------------------------------------
+    def store_memory(self, var, value):
+        if var in self.memory:
+            self.memory[var] = value
+        else:
+            raise ValueError("Invalid memory variable. Use A-F, X, Y, or M.")
+
+    def recall_memory(self, var):
+        return self.memory.get(var, 0)
+
+    def clear_memory(self):
+        for key in self.memory:
+            self.memory[key] = 0
+
+    # -----------------------------------------
+    # 2. Advanced Algebra
+    # -----------------------------------------
+    def prime_factorization(self, n):
+        """Returns a list of prime factors for an integer n."""
+        n = int(n)
+        factors = []
+        # Divide by 2
+        while n % 2 == 0:
+            factors.append(2)
+            n //= 2
+        # Divide by odd numbers
+        for i in range(3, int(math.sqrt(n)) + 1, 2):
+            while n % i == 0:
+                factors.append(i)
+                n //= i
+        if n > 2:
+            factors.append(n)
+        return factors
+
+    def gcd(self, a, b):
+        return math.gcd(int(a), int(b))
+
+    def lcm(self, a, b):
+        return abs(a * b) // self.gcd(a, b)
+
+    def polar_to_rect(self, r, theta):
+        """Convert polar to rectangular coordinates."""
+        if self.angle_mode == 'DEG':
+            theta = math.radians(theta)
+        return r * math.cos(theta), r * math.sin(theta)
+
+    def rect_to_polar(self, x, y):
+        """Convert rectangular to polar coordinates."""
+        r = math.hypot(x, y)
+        theta = math.atan2(y, x)
+        if self.angle_mode == 'DEG':
+            theta = math.degrees(theta)
+        return r, theta
+
+    # -----------------------------------------
+    # 3. Trigonometry & Calculus
+    # -----------------------------------------
+    def _get_angle(self, angle):
+        return math.radians(angle) if self.angle_mode == 'DEG' else angle
+
+    def sin(self, x): return math.sin(self._get_angle(x))
+    def cos(self, x): return math.cos(self._get_angle(x))
+    def tan(self, x): return math.tan(self._get_angle(x))
+    
+    def sinh(self, x): return math.sinh(x)
+    def cosh(self, x): return math.cosh(x)
+    def tanh(self, x): return math.tanh(x)
+
+    def definite_integral(self, func, lower, upper):
+        """Calculates definite integral using scipy."""
+        result, error = integrate.quad(func, lower, upper)
+        return result
+
+    def numerical_derivative(self, func, point, dx=1e-5):
+        """Calculates derivative at a specific point using central difference."""
+        return (func(point + dx) - func(point - dx)) / (2 * dx)
+
+    # -----------------------------------------
+    # 4. Statistics & Probability
+    # -----------------------------------------
+    def stats_1var(self, data):
+        """Returns mean, sample std dev, and population std dev."""
+        arr = np.array(data)
+        return {
+            "mean": np.mean(arr),
+            "pop_std": np.std(arr, ddof=0),
+            "samp_std": np.std(arr, ddof=1)
+        }
+
+    def stats_2var_linreg(self, x_data, y_data):
+        """Linear regression y = a + bx"""
+        slope, intercept = np.polyfit(x_data, y_data, 1)
+        return {"a (intercept)": intercept, "b (slope)": slope}
+
+    def nPr(self, n, r): return math.perm(n, r)
+    def nCr(self, n, r): return math.comb(n, r)
+    def factorial(self, n): return math.factorial(n)
+
+    # -----------------------------------------
+    # 5. Distribution Apps
+    # -----------------------------------------
+    def normal_pdf(self, x, mu=0, sigma=1):
+        return stats.norm.pdf(x, mu, sigma)
+
+    def normal_cdf(self, lower, upper, mu=0, sigma=1):
+        """Area under the normal curve."""
+        return stats.norm.cdf(upper, mu, sigma) - stats.norm.cdf(lower, mu, sigma)
+
+    def inverse_normal(self, area, mu=0, sigma=1):
+        return stats.norm.ppf(area, mu, sigma)
+
+    def binomial_pmf(self, k, n, p):
+        return stats.binom.pmf(k, n, p)
+
+    def poisson_pmf(self, k, mu):
+        return stats.poisson.pmf(k, mu)
+
+    # -----------------------------------------
+    # 6. Complex & Base-N
+    # -----------------------------------------
+    def complex_add(self, c1, c2): return c1 + c2
+    def complex_mult(self, c1, c2): return c1 * c2
+    def complex_to_polar(self, c): return cmath.polar(c) # Returns (r, phi in radians)
+
+    def base_conversion(self, value_str, from_base, to_base):
+        """Converts between Dec (10), Bin (2), Hex (16), Oct (8)."""
+        dec_value = int(value_str, from_base)
+        if to_base == 10: return str(dec_value)
+        elif to_base == 2: return bin(dec_value)[2:]
+        elif to_base == 16: return hex(dec_value)[2:].upper()
+        elif to_base == 8: return oct(dec_value)[2:]
+
+    # -----------------------------------------
+    # 7. Equation Solver
+    # -----------------------------------------
+    def solve_simultaneous(self, coeff_matrix, constants):
+        """Solves systems of linear equations using Numpy."""
+        a = np.array(coeff_matrix)
+        b = np.array(constants)
+        return np.linalg.solve(a, b)
+
+    def solve_polynomial(self, coefficients):
+        """Finds roots of a polynomial. e.g., ax^2 + bx + c -> [a, b, c]"""
+        return np.roots(coefficients)
+
+    # -----------------------------------------
+    # 8. MathBox (Simulations)
+    # -----------------------------------------
+    def roll_dice(self, sides=6, times=1):
+        return [random.randint(1, sides) for _ in range(times)]
+
+    def toss_coin(self, times=1):
+        return [random.choice(['Heads', 'Tails']) for _ in range(times)]
+
+# =========================================
+# Demonstration / Testing Block
+# =========================================
+if __name__ == "__main__":
+    calc = CasioSimulator()
+
+    print("--- Testing Casio fx-991 Engine ---")
+
+    # Calculus Test
+    print("\n1. Calculus:")
+    # Integral of x^2 from 0 to 3
+    integral = calc.definite_integral(lambda x: x**2, 0, 3)
+    print(f"Integral of x^2 from 0 to 3: {integral:.4f}")
+    
+    # Derivative of x^2 at x = 3
+    derivative = calc.numerical_derivative(lambda x: x**2, 3)
+    print(f"Derivative of x^2 at x = 3: {derivative:.4f}")
+
+    # Equation Solver Test
+    print("\n2. Equation Solver:")
+    # 2x + 3y = 8 and 3x - y = 1
+    coeffs = [[2, 3], [3, -1]]
+    consts = [8, 1]
+    ans = calc.solve_simultaneous(coeffs, consts)
+    print(f"Simultaneous (2x+3y=8, 3x-y=1): X={ans[0]:.2f}, Y={ans[1]:.2f}")
+    
+    # Roots of x^2 - 5x + 6 = 0
+    roots = calc.solve_polynomial([1, -5, 6])
+    print(f"Polynomial Roots of x^2 - 5x + 6: {roots}")
+
+    # Distributions Test
+    print("\n3. Distributions:")
+    prob = calc.binomial_pmf(k=5, n=10, p=0.5)
+    print(f"Binomial Probability (5 successes in 10 trials, p=0.5): {prob:.4f}")
+
+    # MathBox Test
+    print("\n4. MathBox:")
+    print(f"Rolling 3 six-sided dice: {calc.roll_dice(6, 3)}")
