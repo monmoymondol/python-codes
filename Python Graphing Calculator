@@ -1,0 +1,77 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def graphing_calculator():
+    print("\n--- Python Graphing Calculator ---")
+    print("Available functions: sin(x), cos(x), tan(x), exp(x), sqrt(x), log(x)")
+    print("Use 'x' as your variable. Example: sin(x) + 2*x - 5")
+    print("Note: Use '**' or '^' for powers (e.g., x^2 or x**2)\n")
+
+    # 1. Get user input
+    func_str = input("Enter the function to graph: y = ")
+    
+    # Make it user-friendly (convert ^ to ** for Python syntax)
+    func_str = func_str.replace('^', '**')
+
+    try:
+        x_min = float(input("Enter minimum x value (e.g., -10): "))
+        x_max = float(input("Enter maximum x value (e.g., 10): "))
+    except ValueError:
+        print("Invalid limits. Using default -10 to 10.")
+        x_min, x_max = -10, 10
+
+    # 2. Generate x values (1000 points between x_min and x_max for a smooth curve)
+    x = np.linspace(x_min, x_max, 1000)
+
+    # 3. Create a safe mathematical environment for evaluating the string
+    safe_dict = {
+        'x': x,
+        'sin': np.sin,
+        'cos': np.cos,
+        'tan': np.tan,
+        'exp': np.exp,
+        'sqrt': np.sqrt,
+        'log': np.log,
+        'log10': np.log10,
+        'pi': np.pi,
+        'e': np.e,
+        'abs': np.abs
+    }
+
+    # 4. Evaluate the user's function
+    try:
+        # Evaluates the mathematical string using only our safe dictionary
+        y = eval(func_str, {"__builtins__": None}, safe_dict)
+    except Exception as e:
+        print(f"\nError evaluating your function: {e}")
+        print("Please check your syntax and try again.")
+        return
+
+    # Handle asymptotes (like tan(x) or 1/x shooting to infinity) by masking large values
+    y = np.where(y > 50, np.nan, y)
+    y = np.where(y < -50, np.nan, y)
+
+    # 5. Plot the graph
+    plt.figure(figsize=(8, 6))
+    plt.plot(x, y, color='blue', linewidth=2, label=f"y = {func_str.replace('**', '^')}")
+    
+    # Formatting the graph to look like a real calculator screen
+    plt.axhline(0, color='black', linewidth=1.2) # X-axis
+    plt.axvline(0, color='black', linewidth=1.2) # Y-axis
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.title("Graphing Calculator")
+    plt.xlabel("x - axis")
+    plt.ylabel("y - axis")
+    plt.legend()
+    
+    # Show the interactive window
+    plt.show()
+
+if __name__ == "__main__":
+    while True:
+        graphing_calculator()
+        
+        again = input("\nWould you like to graph another function? (y/n): ").lower()
+        if again != 'y':
+            print("Closing graphing calculator.")
+            break
