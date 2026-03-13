@@ -1,0 +1,76 @@
+import random
+
+def get_validated_guess(min_val, max_val):
+    """
+    Prompts the user for a guess, validates it as an integer,
+    and checks if it's within the specified range.
+    """
+    while True:
+        try:
+            user_input = input(f"Enter your guess (between {min_val} and {max_val}): ")
+            guess = int(user_input)
+            if min_val <= guess <= max_val:
+                return guess
+            else:
+                print(f"SMIS miniAI says: Whoops! Your guess {guess} is outside the range. Please try a number between {min_val} and {max_val}.")
+        except ValueError:
+            print("SMIS miniAI says: That's not a valid number! Please enter a whole number.")
+
+def play_random_guess_game():
+    """
+    Manages a single round of the random guess game.
+    """
+    print("\n--- Starting a New Game! ---")
+    min_number = 1
+    max_number = 100
+    secret_number = random.randint(min_number, max_number)
+    attempts = 0
+    guessed_correctly = False
+
+    print(f"SMIS miniAI has thought of a secret number between {min_number} and {max_number}.")
+    print("Your mission: Guess the number!")
+
+    while not guessed_correctly:
+        attempts += 1
+        guess = get_validated_guess(min_number, max_number)
+
+        if guess < secret_number:
+            print("SMIS miniAI says: Too low! Aim higher.")
+        elif guess > secret_number:
+            print("SMIS miniAI says: Too high! Try a smaller number.")
+        else:
+            print(f"\n🎉 Congratulations! You guessed the secret number {secret_number}!")
+            print(f"You found it in {attempts} attempt(s). Well done!")
+            guessed_correctly = True
+
+def main():
+    """
+    The main function to run the game and handle the play-again option.
+    """
+    print("--------------------------------------------------")
+    print("      Welcome to the SMIS miniAI Guessing Game!   ")
+    print("--------------------------------------------------")
+    print("I'm here to test your intuition! Can you guess my secret number?")
+
+    play_again = True
+    while play_again:
+        play_random_guess_game()
+
+        while True: # Loop to ensure valid input for playing again
+            choice = input("\nDo you want to play another round? (yes/no): ").lower().strip()
+            if choice in ['yes', 'y']:
+                play_again = True
+                break
+            elif choice in ['no', 'n']:
+                play_again = False
+                break
+            else:
+                print("SMIS miniAI says: Invalid choice. Please type 'yes' or 'no'.")
+
+    print("\n--------------------------------------------------")
+    print("   Thanks for playing! See you next time, future leader! ")
+    print("          - Your friendly SMIS miniAI             ")
+    print("--------------------------------------------------")
+
+if __name__ == "__main__":
+    main()
