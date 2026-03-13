@@ -1,0 +1,77 @@
+e GPA Calculator ---
+
+def calculate_gpa():
+    """Calculates GPA based on user input for courses."""
+
+    print("\n--- Welcome to the SMIS miniAI GPA Calculator! ---")
+    print("Let's figure out your academic standing, bro.\n")
+
+    total_grade_points = 0.0
+    total_credit_hours = 0.0
+
+    # Define a basic grade point scale (you can customize this!)
+    grade_scale = {
+        'A+': 4.0, 'A': 4.0, 'A-': 3.7,
+        'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+        'C+': 2.3, 'C': 2.0, 'C-': 1.7,
+        'D+': 1.3, 'D': 1.0, 'D-': 0.7,
+        'F': 0.0
+    }
+
+    while True:
+        try:
+            num_courses = int(input("How many courses are you entering? (Enter 0 to quit): "))
+            if num_courses == 0:
+                print("Exiting GPA calculator. See ya!")
+                return
+            if num_courses < 0:
+                print("Please enter a positive number of courses.")
+                continue
+            break
+        except ValueError:
+            print("Invalid input. Please enter a whole number.")
+
+    print("\nOkay, let's get the details for each course...")
+
+    for i in range(num_courses):
+        print(f"\n--- Course {i + 1} ---")
+        course_name = input(f"Enter the name of Course {i + 1}: ")
+
+        # Get and validate grade
+        while True:
+            grade = input(f"Enter letter grade for {course_name} (e.g., A, B+, C-, F): ").upper().strip()
+            if grade in grade_scale:
+                break
+            else:
+                print(f"Invalid grade '{grade}'. Please use one of: {', '.join(grade_scale.keys())}")
+
+        # Get and validate credit hours
+        while True:
+            try:
+                credits = float(input(f"Enter credit hours for {course_name}: "))
+                if credits <= 0:
+                    print("Credit hours must be greater than zero.")
+                    continue
+                break
+            except ValueError:
+                print("Invalid input. Please enter a number for credit hours (e.g., 3.0, 4.5).")
+
+        # Calculate grade points for this course
+        grade_points = grade_scale[grade]
+        course_weighted_points = grade_points * credits
+
+        total_grade_points += course_weighted_points
+        total_credit_hours += credits
+
+    print("\n--- Calculation Complete! ---")
+    if total_credit_hours > 0:
+        gpa = total_grade_points / total_credit_hours
+        print(f"Based on your entries, your estimated GPA is: {gpa:.2f}")
+    else:
+        print("No valid courses or credit hours were entered to calculate a GPA.")
+
+    print("\nKeep up the great work, bro! You got this!")
+
+# --- Run the GPA calculator ---
+if __name__ == "__main__":
+    calculate_gpa()
