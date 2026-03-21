@@ -1,0 +1,74 @@
+import json
+
+students = []
+
+# Load from file
+def load_data():
+    global students
+    try:
+        with open("students.json", "r") as f:
+            students = json.load(f)
+    except:
+        students = []
+
+# Save to file
+def save_data():
+    with open("students.json", "w") as f:
+        json.dump(students, f, indent=4)
+
+# Add student
+def add_student():
+    student = {
+        "id": int(input("Enter ID: ")),
+        "name": input("Enter Name: "),
+        "department": input("Enter Department: ")
+    }
+    students.append(student)
+    save_data()
+
+# View students
+def view_students():
+    for s in students:
+        print(s)
+
+# Search student
+def search_student():
+    sid = int(input("Enter ID: "))
+    for s in students:
+        if s["id"] == sid:
+            print(s)
+            return
+    print("Not found!")
+
+# Delete student
+def delete_student():
+    sid = int(input("Enter ID: "))
+    global students
+    students = [s for s in students if s["id"] != sid]
+    save_data()
+    print("Deleted if existed.")
+
+# Main menu
+def main():
+    load_data()
+    while True:
+        print("\n--- Student Enrollment System ---")
+        print("1. Add\n2. View\n3. Search\n4. Delete\n5. Exit")
+
+        choice = input("Choice: ")
+
+        if choice == '1':
+            add_student()
+        elif choice == '2':
+            view_students()
+        elif choice == '3':
+            search_student()
+        elif choice == '4':
+            delete_student()
+        elif choice == '5':
+            break
+        else:
+            print("Invalid choice!")
+
+if __name__ == "__main__":
+    main()
