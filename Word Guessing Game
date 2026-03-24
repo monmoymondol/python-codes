@@ -1,0 +1,112 @@
+import random
+
+# Word categories
+word_data = {
+    "easy": ["cat", "dog", "sun", "pen", "book"],
+    "medium": ["python", "player", "water", "board", "apple"],
+    "hard": ["programming", "mathematics", "condition", "computer", "science"]
+}
+
+# Hint system
+hints = {
+    "cat": "A small pet animal",
+    "dog": "Man's best friend",
+    "sun": "Center of solar system",
+    "pen": "Used for writing",
+    "book": "You read it",
+
+    "python": "Popular programming language",
+    "player": "Someone who plays",
+    "water": "Essential for life",
+    "board": "Used in classrooms",
+    "apple": "A fruit",
+
+    "programming": "Writing code",
+    "mathematics": "Study of numbers",
+    "condition": "Used in if statements",
+    "computer": "Electronic machine",
+    "science": "Study of nature"
+}
+
+def choose_difficulty():
+    print("\nChoose Difficulty:")
+    print("1. Easy\n2. Medium\n3. Hard")
+    
+    while True:
+        choice = input("Enter choice (1/2/3): ")
+        if choice == '1':
+            return "easy", 10
+        elif choice == '2':
+            return "medium", 8
+        elif choice == '3':
+            return "hard", 6
+        else:
+            print("Invalid choice! Try again.")
+
+def play_game():
+    name = input("Enter your name: ")
+    print(f"\nGood Luck, {name}! 🎮")
+
+    difficulty, turns = choose_difficulty()
+    word = random.choice(word_data[difficulty])
+
+    guessed = ""
+    score = 0
+
+    print("\nHint:", hints[word])
+    print("\nStart guessing...")
+
+    while turns > 0:
+        display = ""
+        failed = 0
+
+        for char in word:
+            if char in guessed:
+                display += char + " "
+            else:
+                display += "_ "
+                failed += 1
+
+        print("\nWord:", display)
+
+        if failed == 0:
+            print("\n🎉 You Win!")
+            print("The word was:", word)
+            score += turns * 10
+            print("Score:", score)
+            return
+
+        guess = input("Enter a character: ").lower()
+
+        # Input validation
+        if not guess.isalpha() or len(guess) != 1:
+            print("⚠️ Enter a single valid letter!")
+            continue
+
+        if guess in guessed:
+            print("⚠️ You already guessed that letter!")
+            continue
+
+        guessed += guess
+
+        if guess not in word:
+            turns -= 1
+            print("❌ Wrong guess!")
+            print("Remaining turns:", turns)
+
+        else:
+            print("✅ Correct!")
+
+    print("\n💀 You Lost!")
+    print("The word was:", word)
+
+def main():
+    while True:
+        play_game()
+        again = input("\nDo you want to play again? (yes/no): ").lower()
+        if again != "yes":
+            print("Thanks for playing! 👋")
+            break
+
+if __name__ == "__main__":
+    main()
