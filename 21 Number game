@@ -1,0 +1,100 @@
+def nearest_multiple(num):
+    return ((num // 4) + 1) * 4
+
+
+def check_consecutive(nums):
+    return all(nums[i] - nums[i - 1] == 1 for i in range(1, len(nums)))
+
+
+def get_user_input():
+    try:
+        count = int(input("How many numbers (1-3)? > "))
+        if count not in [1, 2, 3]:
+            return None, None
+
+        nums = []
+        print("Enter numbers:")
+        for _ in range(count):
+            nums.append(int(input("> ")))
+
+        return count, nums
+    except:
+        return None, None
+
+
+def computer_move(last, strategy=True):
+    if strategy:
+        target = nearest_multiple(last)
+        move_count = target - last
+        if move_count <= 0 or move_count > 3:
+            move_count = 1
+    else:
+        move_count = 1
+
+    moves = [last + i for i in range(1, move_count + 1)]
+    return moves
+
+
+def play_game():
+    print("\n🎮 21 Number Game 🎮")
+    print("Rule: Avoid saying 21!")
+
+    choice = input("Do you want to go First (F) or Second (S)? > ").upper()
+
+    sequence = []
+    last = 0
+
+    player_turn = True if choice == "F" else False
+
+    while True:
+        if player_turn:
+            print("\n🧑 Your Turn")
+            count, nums = get_user_input()
+
+            if count is None:
+                print("⚠️ Invalid input! You lose.")
+                return
+
+            sequence.extend(nums)
+
+            if not check_consecutive(sequence):
+                print("⚠️ Not consecutive! You lose.")
+                return
+
+            last = sequence[-1]
+
+            if last >= 21:
+                print("💀 You said 21. You lose!")
+                return
+
+        else:
+            print("\n💻 Computer's Turn")
+            moves = computer_move(last, strategy=True)
+            sequence.extend(moves)
+
+            print("Computer chose:", moves)
+
+            last = sequence[-1]
+
+            if last >= 21:
+                print("🎉 Computer said 21. You win!")
+                return
+
+        print("Sequence:", sequence)
+        player_turn = not player_turn
+
+
+def main():
+    while True:
+        ans = input("\nDo you want to play? (yes/no) > ").lower()
+        if ans == "yes":
+            play_game()
+        elif ans == "no":
+            print("👋 Exiting game. Bye!")
+            break
+        else:
+            print("⚠️ Invalid choice!")
+
+
+if __name__ == "__main__":
+    main()
