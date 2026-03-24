@@ -1,0 +1,80 @@
+import random
+from collections import Counter
+
+# Word list
+words = '''apple banana mango strawberry 
+orange grape pineapple apricot lemon coconut watermelon 
+cherry papaya berry peach lychee muskmelon'''.split()
+
+# Hint system (simple auto hints)
+def get_hint(word):
+    return f"Starts with '{word[0]}' and length is {len(word)}"
+
+# Display word
+def display_word(word, guessed):
+    display = ""
+    for char in word:
+        if char in guessed:
+            display += char + " "
+        else:
+            display += "_ "
+    return display
+
+# Main game function
+def play():
+    word = random.choice(words)
+    guessed_letters = ""
+    chances = len(word) + 3
+    score = 0
+
+    print("\n🍓 Guess the Word Game 🍓")
+    print("Hint:", get_hint(word))
+
+    while chances > 0:
+        print("\nWord:", display_word(word, guessed_letters))
+        print("Guessed letters:", guessed_letters)
+        print("Lives:", "❤️" * chances)
+
+        guess = input("Enter a letter: ").lower()
+
+        # Validation
+        if not guess.isalpha() or len(guess) != 1:
+            print("⚠️ Enter a single valid letter!")
+            continue
+
+        if guess in guessed_letters:
+            print("⚠️ Already guessed!")
+            continue
+
+        guessed_letters += guess
+
+        if guess in word:
+            print("✅ Correct!")
+            score += 10
+        else:
+            print("❌ Wrong!")
+            chances -= 1
+
+        # Win condition
+        if Counter(guessed_letters) >= Counter(word):
+            print("\n🎉 You Win!")
+            print("Word:", word)
+            print("Score:", score)
+            return
+
+    print("\n💀 You Lost!")
+    print("The word was:", word)
+
+
+# Game loop
+def main():
+    while True:
+        play()
+        again = input("\nPlay again? (yes/no): ").lower()
+        if again != "yes":
+            print("👋 Thanks for playing!")
+            break
+
+
+if __name__ == "__main__":
+    main()
