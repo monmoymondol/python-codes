@@ -1,0 +1,102 @@
+import pyautogui
+import cv2
+import numpy as np
+import sounddevice as sd
+from scipy.io.wavfile import write
+import threading
+import datetime
+import time
+
+# ================= SETTINGS =================
+FPS = 20.0
+AUDIO_FS = 44100
+CHANNELS = 2
+
+# ===========================================
+
+# Screen resolution
+screen_size = pyautogui.size()
+resolution = (screen_size.width, screen_size.height)
+
+# Filename with timestamp
+timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+video_filename = f"record_{timestamp}.avi"
+audio_filename = f"audio_{timestamp}.wav"
+
+# Video writer
+fourcc = cv2.VideoWriter_fourcc(*"XVID")
+out = cv2.VideoWriter(video_filename, fourcc, FPS, resolution)
+
+# Audio buffer
+audio_data = []
+recording_audio = True
+
+
+# 🎤 AUDIO RECORD FUNCTION
+def record_audio():
+    global audio_data
+    def callback(indata, frames, time, status):
+        audio_data.append(indata.copy())
+
+    with sd.InputStream(samplerate=AUDIO_FS, channels=CHANNELS, callback=callback):
+        while recording_audio:
+            sd.sleep(100)
+
+
+# 📷 WEBCAM INIT
+cap = cv2.VideoCapture(0)
+
+
+# ▶️ START AUDIO THREAD
+audio_thread = threading.Thread(target=record_audio)
+audio_thread.start()
+
+print("🎥 Recording started... Press 'q' to stop")
+
+start_time = time.time()
+
+while True:
+    # SCREEN CAPTURE
+    img = pyautogui.screenshot()
+    frame = np.array(img)
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+    # 📷 WEBCAM OVERLAY
+    ret, cam_frame = cap.read()
+    if ret:
+        cam_frame = cv2.resize(cam_frame, (300, 200))
+        h, w, _ = cam_frame.shape
+
+        # Place bottom-right corner
+        frame[-h-10:-10, -w-10:-10] = cam_frame
+
+    # WRITE FRAME
+    out.write(frame)
+
+    # SHOW PREVIEW
+    cv2.imshow("OBS Style Recorder", frame)
+
+    # TIMER
+    elapsed = int(time.time() - start_time)
+    print(f"\r⏱️ Recording: {elapsed}s", end="")
+
+    # STOP KEY
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# STOP AUDIO
+recording_audio = False
+audio_thread.join()
+
+# SAVE AUDIO
+audio_np = np.concatenate(audio_data, axis=0)
+write(audio_filename, AUDIO_FS, audio_np)
+
+# RELEASE EVERYTHING
+out.release()
+cap.release()
+cv2.destroyAllWindows()
+
+print(f"\n✅ Video saved: {video_filename}")
+print(f"✅ Audio saved: {audio_filename}")
+print("⚠️ Use ffmpeg to merge audio + video")
