@@ -1,0 +1,67 @@
+import sounddevice as sd
+from scipy.io.wavfile import write
+import numpy as np
+import datetime
+import os
+
+
+def list_devices():
+    print("\n🎧 Available Audio Devices:")
+    devices = sd.query_devices()
+    for i, device in enumerate(devices):
+        print(f"{i}: {device['name']}")
+
+
+def record_audio(duration, samplerate=44100, channels=2):
+    print("\n🎙️ Recording started...")
+    
+    recording = sd.rec(int(duration * samplerate),
+                       samplerate=samplerate,
+                       channels=channels,
+                       dtype='int16')
+
+    sd.wait()
+    print("✅ Recording finished!")
+
+    return recording
+
+
+def save_audio(data, samplerate):
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"recording_{timestamp}.wav"
+
+    write(filename, samplerate, data)
+    print(f"💾 Saved as: {filename}")
+
+    return filename
+
+
+def play_audio(data, samplerate):
+    print("▶️ Playing audio...")
+    sd.play(data, samplerate)
+    sd.wait()
+
+
+def main():
+    print("🎤 Advanced Audio Recorder")
+
+    try:
+        list_devices()
+        device_id = int(input("\nSelect microphone device ID: "))
+        sd.default.device = device_id
+
+        duration = int(input("Enter recording duration (seconds): "))
+
+        audio_data = record_audio(duration)
+        filename = save_audio(audio_data, 44100)
+
+        choice = input("Do you want to play the recording? (y/n): ").lower()
+        if choice == 'y':
+            play_audio(audio_data, 44100)
+
+    except Exception as e:
+        print("❌ Error:", e)
+
+
+if __name__ == "__main__":
+    main()
