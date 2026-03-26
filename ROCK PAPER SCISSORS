@@ -1,0 +1,86 @@
+import random
+
+choices = ["rock", "paper", "scissors"]
+
+# Score tracking
+user_score = 0
+comp_score = 0
+draws = 0
+
+def get_user_choice():
+    while True:
+        user_input = input("\nEnter Rock, Paper, or Scissors: ").lower()
+
+        if user_input in choices:
+            return user_input
+        else:
+            print("⚠️ Invalid choice! Try again.")
+
+
+def get_computer_choice():
+    return random.choice(choices)
+
+
+def decide_winner(user, comp):
+    if user == comp:
+        return "draw"
+    elif (user == "rock" and comp == "scissors") or \
+         (user == "paper" and comp == "rock") or \
+         (user == "scissors" and comp == "paper"):
+        return "user"
+    else:
+        return "computer"
+
+
+def display_result(user, comp, result):
+    print(f"\n🧑 You chose: {user.capitalize()}")
+    print(f"💻 Computer chose: {comp.capitalize()}")
+
+    if result == "draw":
+        print("🤝 It's a Draw!")
+    elif result == "user":
+        print("🎉 You Win!")
+    else:
+        print("💀 Computer Wins!")
+
+
+def main():
+    global user_score, comp_score, draws
+
+    print("\n🎮 Rock Paper Scissors Game 🎮")
+    print("Type 'exit' anytime to quit.\n")
+
+    while True:
+        user_input = input("Enter your choice (rock/paper/scissors): ").lower()
+
+        if user_input == "exit":
+            break
+
+        if user_input not in choices:
+            print("⚠️ Invalid input!")
+            continue
+
+        comp_choice = get_computer_choice()
+        result = decide_winner(user_input, comp_choice)
+
+        display_result(user_input, comp_choice, result)
+
+        # Update score
+        if result == "user":
+            user_score += 1
+        elif result == "computer":
+            comp_score += 1
+        else:
+            draws += 1
+
+        # Show scoreboard
+        print("\n📊 Scoreboard:")
+        print(f"You: {user_score} | Computer: {comp_score} | Draws: {draws}")
+
+    print("\n👋 Final Score:")
+    print(f"You: {user_score} | Computer: {comp_score} | Draws: {draws}")
+    print("Thanks for playing!")
+
+
+if __name__ == "__main__":
+    main()
