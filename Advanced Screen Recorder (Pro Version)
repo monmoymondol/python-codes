@@ -1,0 +1,56 @@
+import pyautogui
+import cv2
+import numpy as np
+import datetime
+import time
+
+# Get screen resolution automatically
+screen_size = pyautogui.size()
+resolution = (screen_size.width, screen_size.height)
+
+# Video settings
+codec = cv2.VideoWriter_fourcc(*"XVID")
+fps = 20.0
+
+# Auto filename with timestamp
+timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+filename = f"screen_record_{timestamp}.avi"
+
+# Create VideoWriter
+out = cv2.VideoWriter(filename, codec, fps, resolution)
+
+# Preview window
+cv2.namedWindow("Live Recording", cv2.WINDOW_NORMAL)
+cv2.resizeWindow("Live Recording", 480, 270)
+
+print("🎥 Recording started... Press 'q' to stop.")
+
+start_time = time.time()
+
+while True:
+    # Screenshot
+    img = pyautogui.screenshot()
+    frame = np.array(img)
+
+    # Convert RGB to BGR (required for OpenCV)
+    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+    # Write frame
+    out.write(frame)
+
+    # Show preview
+    cv2.imshow("Live Recording", frame)
+
+    # Show timer
+    elapsed = int(time.time() - start_time)
+    print(f"\r⏱️ Recording: {elapsed}s", end="")
+
+    # Stop with 'q'
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# Release resources
+out.release()
+cv2.destroyAllWindows()
+
+print(f"\n✅ Recording saved as: {filename}")
