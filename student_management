@@ -1,0 +1,424 @@
+import json
+import os
+import sys
+from datetime import datetime
+
+# ─── File Storage ─────────────────────────────────────────────────────────────
+DATA_FILE = "students.json"
+
+# ─── ANSI Colors ──────────────────────────────────────────────────────────────
+class Color:
+    RESET   = "\033[0m"
+    BOLD    = "\033[1m"
+    RED     = "\033[91m"
+    GREEN   = "\033[92m"
+    YELLOW  = "\033[93m"
+    BLUE    = "\033[94m"
+    CYAN    = "\033[96m"
+    MAGENTA = "\033[95m"
+    WHITE   = "\033[97m"
+
+def c(text, color):
+    return f"{color}{text}{Color.RESET}"
+
+
+# ─── Data Layer ───────────────────────────────────────────────────────────────
+def load_data() -> dict:
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    return {"students": [], "next_id": 1001}
+
+def save_data(data: dict):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+def clear():
+    os.system("cls" if os.name == "nt" else "clear")
+
+def pause():
+    input(c("\n  Press Enter to continue...", Color.YELLOW))
+
+def divider(char="─", length=62):
+    print(c(char * length, Color.BLUE))
+
+def header(title: str):
+    clear()
+    divider("═")
+    print(c(f"  🎓  UNIVERSITY STUDENT MANAGEMENT SYSTEM", Color.CYAN + Color.BOLD))
+    divider("═")
+    print(c(f"  ▸  {title}", Color.YELLOW + Color.BOLD))
+    divider()
+
+def gpa_grade(gpa: float) -> str:
+    if gpa >= 3.7:  return "A+ (Excellent)"
+    if gpa >= 3.3:  return "A  (Very Good)"
+    if gpa >= 3.0:  return "B+ (Good)"
+    if gpa >= 2.7:  return "B  (Above Average)"
+    if gpa >= 2.3:  return "C+ (Average)"
+    if gpa >= 2.0:  return "C  (Satisfactory)"
+    if gpa >= 1.0:  return "D  (Poor)"
+    return          "F  (Failing)"
+
+def gpa_color(gpa: float) -> str:
+    if gpa >= 3.3:  return Color.GREEN
+    if gpa >= 2.0:  return Color.YELLOW
+    return Color.RED
+
+def input_field(label: str, required=True) -> str:
+    while True:
+        val = input(c(f"  {label}: ", Color.CYAN)).strip()
+        if val or not required:
+            return val
+        print(c("  ✖  This field is required.", Color.RED))
+
+def input_float(label: str, lo: float, hi: float) -> float:
+    while True:
+        raw = input(c(f"  {label} ({lo}–{hi}): ", Color.CYAN)).strip()
+        try:
+            val = float(raw)
+            if lo <= val <= hi:
+                return val
+            print(c(f"  ✖  Must be between {lo} and {hi}.", Color.RED))
+        except ValueError:
+            print(c("  ✖  Enter a valid number.", Color.RED))
+
+def input_int(label: str, lo: int, hi: int) -> int:
+    while True:
+        raw = input(c(f"  {label} ({lo}–{hi}): ", Color.CYAN)).strip()
+        try:
+            val = int(raw)
+            if lo <= val <= hi:
+                return val
+            print(c(f"  ✖  Must be between {lo} and {hi}.", Color.RED))
+        except ValueError:
+            print(c("  ✖  Enter a valid integer.", Color.RED))
+
+def choose_department() -> str:
+    departments = [
+        "Computer Science", "Electrical Engineering",
+        "Mechanical Engineering", "Business Administration",
+        "Mathematics", "Physics", "Chemistry", "Biology",
+        "English Literature", "Economics"
+    ]
+    print(c("\n  Departments:", Color.YELLOW))
+    for i, d in enumerate(departments, 1):
+        print(f"   {c(str(i), Color.CYAN)}. {d}")
+    choice = input_int("  Select department number", 1, len(departments))
+    return departments[choice - 1]
+
+def find_student(data: dict, student_id: str):
+    for s in data["students"]:
+        if s["id"] == student_id.upper():
+            return s
+    return None
+
+def print_student_card(s: dict, index: int = None):
+    gpa = s["gpa"]
+    prefix = f" {c(str(index), Color.MAGENTA)}." if index else "  "
+    divider("·")
+    print(f"{prefix} {c('ID:', Color.YELLOW)} {s['id']}   "
+          f"{c('Name:', Color.YELLOW)} {c(s['name'], Color.WHITE + Color.BOLD)}   "
+          f"{c('Age:', Color.YELLOW)} {s['age']}")
+    print(f"     {c('Dept:', Color.YELLOW)} {s['department']}   "
+          f"{c('Year:', Color.YELLOW)} {s['year']}   "
+          f"{c('Email:', Color.YELLOW)} {s['email']}")
+    gpa_str = f"{gpa:.2f}  →  {gpa_grade(gpa)}"
+    print(f"     {c('GPA:', Color.YELLOW)} {c(gpa_str, gpa_color(gpa))}   "
+          f"{c('Enrolled:', Color.YELLOW)} {s['enrolled']}")
+    if s.get("courses"):
+        print(f"     {c('Courses:', Color.YELLOW)} {', '.join(s['courses'])}")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FEATURES
+# ══════════════════════════════════════════════════════════════════════════════
+
+def add_student(data: dict):
+    header("ADD NEW STUDENT")
+    print(c("  Fill in student details:\n", Color.WHITE))
+
+    name       = input_field("Full Name")
+    age        = input_int("Age", 16, 60)
+    department = choose_department()
+    year       = input_int("\n  Study Year", 1, 6)
+    email      = input_field("Email Address")
+    gpa        = input_float("GPA", 0.0, 4.0)
+
+    print(c("\n  Add enrolled courses (comma-separated, or leave blank):", Color.CYAN))
+    raw_courses = input(c("  Courses: ", Color.CYAN)).strip()
+    courses = [c.strip() for c in raw_courses.split(",") if c.strip()] if raw_courses else []
+
+    student_id = f"STU{data['next_id']}"
+    student = {
+        "id":         student_id,
+        "name":       name,
+        "age":        age,
+        "department": department,
+        "year":       year,
+        "email":      email,
+        "gpa":        gpa,
+        "courses":    courses,
+        "enrolled":   datetime.now().strftime("%Y-%m-%d")
+    }
+    data["students"].append(student)
+    data["next_id"] += 1
+    save_data(data)
+
+    print(c(f"\n  ✔  Student added successfully! ID: {student_id}", Color.GREEN + Color.BOLD))
+    pause()
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+def view_all_students(data: dict):
+    header("ALL STUDENTS")
+    students = data["students"]
+    if not students:
+        print(c("  No students found. Add some first!", Color.YELLOW))
+        pause()
+        return
+
+    print(c(f"  Total students: {len(students)}\n", Color.CYAN))
+    for i, s in enumerate(students, 1):
+        print_student_card(s, index=i)
+    divider("·")
+    pause()
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+def search_student(data: dict):
+    header("SEARCH STUDENT")
+    print(c("  Search by:  1. Student ID   2. Name   3. Department\n", Color.WHITE))
+    choice = input_int("  Select option", 1, 3)
+
+    results = []
+
+    if choice == 1:
+        sid = input_field("Enter Student ID (e.g. STU1001)")
+        results = [s for s in data["students"] if s["id"] == sid.upper()]
+
+    elif choice == 2:
+        name = input_field("Enter Name (partial OK)").lower()
+        results = [s for s in data["students"] if name in s["name"].lower()]
+
+    elif choice == 3:
+        dept = input_field("Enter Department (partial OK)").lower()
+        results = [s for s in data["students"] if dept in s["department"].lower()]
+
+    if not results:
+        print(c("\n  ✖  No matching students found.", Color.RED))
+    else:
+        print(c(f"\n  Found {len(results)} result(s):\n", Color.GREEN))
+        for i, s in enumerate(results, 1):
+            print_student_card(s, index=i)
+        divider("·")
+    pause()
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+def update_student(data: dict):
+    header("UPDATE STUDENT")
+    sid = input_field("Enter Student ID to update (e.g. STU1001)")
+    student = find_student(data, sid)
+
+    if not student:
+        print(c(f"\n  ✖  Student '{sid.upper()}' not found.", Color.RED))
+        pause()
+        return
+
+    print(c("\n  Current record:", Color.YELLOW))
+    print_student_card(student)
+    divider("·")
+
+    print(c("""
+  What would you like to update?
+   1. Name         2. Age          3. Department
+   4. Study Year   5. Email        6. GPA
+   7. Courses      8. Cancel
+""", Color.WHITE))
+
+    choice = input_int("  Select option", 1, 8)
+
+    if choice == 1:
+        student["name"] = input_field("New Name")
+    elif choice == 2:
+        student["age"] = input_int("New Age", 16, 60)
+    elif choice == 3:
+        student["department"] = choose_department()
+    elif choice == 4:
+        student["year"] = input_int("New Study Year", 1, 6)
+    elif choice == 5:
+        student["email"] = input_field("New Email")
+    elif choice == 6:
+        student["gpa"] = input_float("New GPA", 0.0, 4.0)
+    elif choice == 7:
+        raw = input(c("  New Courses (comma-separated): ", Color.CYAN)).strip()
+        student["courses"] = [x.strip() for x in raw.split(",") if x.strip()]
+    elif choice == 8:
+        print(c("  Update cancelled.", Color.YELLOW))
+        pause()
+        return
+
+    save_data(data)
+    print(c(f"\n  ✔  Student {student['id']} updated successfully!", Color.GREEN + Color.BOLD))
+    pause()
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+def delete_student(data: dict):
+    header("DELETE STUDENT")
+    sid = input_field("Enter Student ID to delete (e.g. STU1001)")
+    student = find_student(data, sid)
+
+    if not student:
+        print(c(f"\n  ✖  Student '{sid.upper()}' not found.", Color.RED))
+        pause()
+        return
+
+    print(c("\n  Student to be deleted:", Color.YELLOW))
+    print_student_card(student)
+    divider("·")
+
+    confirm = input(c("\n  Are you sure? Type YES to confirm: ", Color.RED)).strip()
+    if confirm == "YES":
+        data["students"].remove(student)
+        save_data(data)
+        print(c(f"\n  ✔  Student {student['id']} deleted.", Color.GREEN))
+    else:
+        print(c("  Deletion cancelled.", Color.YELLOW))
+    pause()
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+def statistics(data: dict):
+    header("STATISTICS & REPORT")
+    students = data["students"]
+
+    if not students:
+        print(c("  No data available yet.", Color.YELLOW))
+        pause()
+        return
+
+    total   = len(students)
+    gpas    = [s["gpa"] for s in students]
+    avg_gpa = sum(gpas) / total
+    top     = max(students, key=lambda s: s["gpa"])
+    lowest  = min(students, key=lambda s: s["gpa"])
+
+    # Department breakdown
+    dept_counts: dict = {}
+    for s in students:
+        dept_counts[s["department"]] = dept_counts.get(s["department"], 0) + 1
+
+    # Year breakdown
+    year_counts: dict = {}
+    for s in students:
+        yr = f"Year {s['year']}"
+        year_counts[yr] = year_counts.get(yr, 0) + 1
+
+    # GPA bands
+    excellent  = sum(1 for g in gpas if g >= 3.5)
+    good       = sum(1 for g in gpas if 2.5 <= g < 3.5)
+    average    = sum(1 for g in gpas if 1.5 <= g < 2.5)
+    poor       = sum(1 for g in gpas if g < 1.5)
+
+    print(c("  ── Overview ──────────────────────────────────────────", Color.BLUE))
+    print(f"  {c('Total Students:', Color.YELLOW)}   {c(str(total), Color.WHITE + Color.BOLD)}")
+    print(f"  {c('Average GPA:  ', Color.YELLOW)}   {c(f'{avg_gpa:.2f}', gpa_color(avg_gpa) + Color.BOLD)}  →  {gpa_grade(avg_gpa)}")
+    print(f"  {c('Highest GPA:  ', Color.YELLOW)}   {c(f'{top[\"gpa\"]:.2f}', Color.GREEN)}  ({top['name']}  |  {top['id']})")
+    print(f"  {c('Lowest  GPA:  ', Color.YELLOW)}   {c(f'{lowest[\"gpa\"]:.2f}', Color.RED)}  ({lowest['name']}  |  {lowest['id']})")
+
+    print(c("\n  ── GPA Distribution ──────────────────────────────────", Color.BLUE))
+    bands = [("Excellent  (≥3.5)", excellent, Color.GREEN),
+             ("Good       (2.5–3.4)", good,  Color.CYAN),
+             ("Average    (1.5–2.4)", average, Color.YELLOW),
+             ("Poor       (<1.5)",    poor,  Color.RED)]
+    for label, count, col in bands:
+        bar = "█" * count
+        print(f"  {c(label, Color.WHITE):30s}  {c(bar, col)} {count}")
+
+    print(c("\n  ── Students by Department ────────────────────────────", Color.BLUE))
+    for dept, cnt in sorted(dept_counts.items(), key=lambda x: -x[1]):
+        bar = "▪" * cnt
+        print(f"  {dept:30s}  {c(bar, Color.CYAN)} {cnt}")
+
+    print(c("\n  ── Students by Study Year ────────────────────────────", Color.BLUE))
+    for yr, cnt in sorted(year_counts.items()):
+        bar = "▪" * cnt
+        print(f"  {yr:30s}  {c(bar, Color.MAGENTA)} {cnt}")
+
+    divider()
+    pause()
+
+# ──────────────────────────────────────────────────────────────────────────────
+
+def top_students(data: dict):
+    header("TOP STUDENTS LEADERBOARD")
+    students = data["students"]
+    if not students:
+        print(c("  No students yet.", Color.YELLOW))
+        pause()
+        return
+
+    sorted_students = sorted(students, key=lambda s: s["gpa"], reverse=True)
+    medals = ["🥇", "🥈", "🥉"]
+
+    print(c(f"  {'Rank':<6} {'ID':<10} {'Name':<22} {'Department':<25} {'GPA'}", Color.YELLOW + Color.BOLD))
+    divider()
+    for i, s in enumerate(sorted_students[:10], 1):
+        medal = medals[i-1] if i <= 3 else f"  {i}."
+        gpa_col = gpa_color(s["gpa"])
+        print(f"  {medal:<6} {s['id']:<10} {c(s['name'], Color.WHITE):<31} "
+              f"{s['department']:<25} {c(str(s['gpa']), gpa_col)}")
+    divider()
+    pause()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MAIN MENU
+# ══════════════════════════════════════════════════════════════════════════════
+
+def main_menu():
+    data = load_data()
+    while True:
+        header("MAIN MENU")
+        total = len(data["students"])
+        print(c(f"  Students in database: {total}\n", Color.CYAN))
+        menu = [
+            ("1", "➕  Add New Student"),
+            ("2", "📋  View All Students"),
+            ("3", "🔍  Search Student"),
+            ("4", "✏️   Update Student"),
+            ("5", "🗑️   Delete Student"),
+            ("6", "📊  Statistics & Report"),
+            ("7", "🏆  Top Students Leaderboard"),
+            ("0", "🚪  Exit"),
+        ]
+        for key, label in menu:
+            print(f"   {c(key, Color.CYAN + Color.BOLD)}.  {label}")
+
+        divider()
+        choice = input(c("\n  Enter choice: ", Color.YELLOW)).strip()
+
+        if   choice == "1": add_student(data)
+        elif choice == "2": view_all_students(data)
+        elif choice == "3": search_student(data)
+        elif choice == "4": update_student(data)
+        elif choice == "5": delete_student(data)
+        elif choice == "6": statistics(data)
+        elif choice == "7": top_students(data)
+        elif choice == "0":
+            clear()
+            print(c("\n  👋  Goodbye! Data saved.\n", Color.GREEN + Color.BOLD))
+            sys.exit(0)
+        else:
+            print(c("  ✖  Invalid choice. Try again.", Color.RED))
+            pause()
+
+        # Reload data after each operation
+        data = load_data()
+
+
+if __name__ == "__main__":
+    main_menu()
