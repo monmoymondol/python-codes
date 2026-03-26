@@ -1,0 +1,67 @@
+import hashlib
+from difflib import SequenceMatcher
+
+
+# Generate hash of a file
+def get_file_hash(filename, algorithm="sha256"):
+    try:
+        h = hashlib.new(algorithm)
+
+        with open(filename, "rb") as file:
+            while chunk := file.read(4096):
+                h.update(chunk)
+
+        return h.hexdigest()
+
+    except FileNotFoundError:
+        print(f"❌ File not found: {filename}")
+        return None
+
+
+# Compare file hashes
+def compare_hash(file1, file2):
+    hash1 = get_file_hash(file1)
+    hash2 = get_file_hash(file2)
+
+    if hash1 is None or hash2 is None:
+        return
+
+    print("\n🔐 File Hashes:")
+    print(f"{file1}: {hash1}")
+    print(f"{file2}: {hash2}")
+
+    if hash1 == hash2:
+        print("\n✅ Files are IDENTICAL")
+    else:
+        print("\n❌ Files are DIFFERENT")
+
+
+# Text similarity check
+def compare_similarity(file1, file2):
+    try:
+        with open(file1, "r", encoding="utf-8", errors="ignore") as f1, \
+             open(file2, "r", encoding="utf-8", errors="ignore") as f2:
+
+            text1 = f1.read()
+            text2 = f2.read()
+
+            similarity = SequenceMatcher(None, text1, text2).ratio()
+            print(f"\n📊 Similarity: {similarity * 100:.2f}%")
+
+    except:
+        print("⚠️ Cannot compare similarity (binary or unsupported file)")
+
+
+# Main function
+def main():
+    print("📁 File Comparison Tool")
+
+    file1 = input("Enter first file path: ")
+    file2 = input("Enter second file path: ")
+
+    compare_hash(file1, file2)
+    compare_similarity(file1, file2)
+
+
+if __name__ == "__main__":
+    main()
