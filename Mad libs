@@ -1,0 +1,338 @@
+import os
+import random
+import json
+from datetime import datetime
+
+# ─── ANSI Colors ──────────────────────────────────────────────────────────────
+class Color:
+    RESET   = "\033[0m"
+    BOLD    = "\033[1m"
+    RED     = "\033[91m"
+    GREEN   = "\033[92m"
+    YELLOW  = "\033[93m"
+    BLUE    = "\033[94m"
+    CYAN    = "\033[96m"
+    MAGENTA = "\033[95m"
+    WHITE   = "\033[97m"
+
+def c(text, color): return f"{color}{text}{Color.RESET}"
+def clear(): os.system("cls" if os.name == "nt" else "clear")
+def pause(): input(c("\n  Press Enter to continue...", Color.YELLOW))
+def divider(ch="─", n=62): print(c(ch * n, Color.BLUE))
+
+def header(title=""):
+    clear()
+    divider("═")
+    print(c("  📖  MAD LIBS GENERATOR", Color.CYAN + Color.BOLD))
+    divider("═")
+    if title:
+        print(c(f"  ▸  {title}", Color.YELLOW + Color.BOLD))
+        divider()
+
+# ─── Stories Library ──────────────────────────────────────────────────────────
+STORIES = [
+    {
+        "title": "🚀 The Space Adventure",
+        "blanks": [
+            ("astronaut_name",  "a person's name"),
+            ("planet",          "a planet name"),
+            ("adjective_1",     "an adjective"),
+            ("animal",          "an animal"),
+            ("number",          "a number"),
+            ("verb_past",       "a verb (past tense)"),
+            ("food",            "a type of food"),
+            ("adjective_2",     "another adjective"),
+            ("body_part",       "a body part"),
+            ("exclamation",     "an exclamation (e.g. Wow / Yikes!)"),
+        ],
+        "template": """
+  Once upon a time, a brave astronaut named {astronaut_name} blasted off
+  toward the mysterious planet {planet}. The journey was incredibly
+  {adjective_1}, especially when a giant space {animal} appeared out of
+  nowhere! It had {number} eyes and {verb_past} wildly through the stars.
+
+  To survive, {astronaut_name} pulled out a bag of {food} and threw it at
+  the creature. The beast looked {adjective_2} and scratched its enormous
+  {body_part} in confusion.
+
+  "{exclamation}!" shouted {astronaut_name}, firing up the rocket engines
+  and zooming safely back to Earth. It was the most unforgettable trip
+  in the history of space travel.
+"""
+    },
+    {
+        "title": "🏫 The Weird School Day",
+        "blanks": [
+            ("student_name",    "a student's name"),
+            ("subject",         "a school subject"),
+            ("adjective_1",     "an adjective"),
+            ("animal",          "an animal"),
+            ("verb_ing",        "a verb ending in -ing"),
+            ("teacher_name",    "a teacher's name"),
+            ("number",          "a number"),
+            ("silly_word",      "a made-up silly word"),
+            ("food",            "a type of food"),
+            ("adjective_2",     "another adjective"),
+        ],
+        "template": """
+  It was just another morning for {student_name} at school — until
+  {adjective_1} things started happening in {subject} class.
+
+  A wild {animal} burst through the window, {verb_ing} across the desks!
+  Teacher {teacher_name} screamed and knocked over {number} stacks of
+  homework, shouting "{silly_word}!" at the top of their voice.
+
+  The whole class erupted in chaos. Someone had left a tray of {food}
+  on the floor, and the {animal} slipped right into it. It was the most
+  {adjective_2} day the school had ever seen — and nobody did a single
+  bit of homework.
+"""
+    },
+    {
+        "title": "🧙 The Magic Forest",
+        "blanks": [
+            ("hero_name",       "a hero's name"),
+            ("adjective_1",     "an adjective"),
+            ("magic_item",      "a magical item"),
+            ("creature",        "a mythical creature"),
+            ("verb_past",       "a verb (past tense)"),
+            ("color",           "a color"),
+            ("number",          "a number"),
+            ("adjective_2",     "an adjective"),
+            ("noun",            "a random noun"),
+            ("emotion",         "an emotion"),
+        ],
+        "template": """
+  Deep inside the {adjective_1} Magic Forest, a young hero named
+  {hero_name} discovered a glowing {magic_item} hidden beneath an
+  ancient tree.
+
+  Suddenly, a fearsome {creature} {verb_past} out of the shadows,
+  its scales shimmering {color}. It had guarded the forest for
+  {number} centuries, and it did NOT look happy.
+
+  But {hero_name} was {adjective_2}. Holding up the {noun}, they
+  shouted the magic words and filled the forest with a feeling of
+  pure {emotion}. The creature bowed and disappeared into the mist.
+
+  The forest was saved — at least until next Tuesday.
+"""
+    },
+    {
+        "title": "🍕 The Restaurant Disaster",
+        "blanks": [
+            ("customer_name",   "a customer's name"),
+            ("restaurant",      "a restaurant name"),
+            ("adjective_1",     "an adjective"),
+            ("food_1",          "a weird food"),
+            ("food_2",          "another food"),
+            ("verb_past",       "a verb (past tense)"),
+            ("number",          "a number"),
+            ("body_part",       "a body part"),
+            ("adjective_2",     "an adjective"),
+            ("exclamation",     "an exclamation"),
+        ],
+        "template": """
+  {customer_name} walked into {restaurant}, the most {adjective_1}
+  restaurant in town. The menu featured exotic dishes like deep-fried
+  {food_1} stuffed with {food_2} sauce.
+
+  When the waiter arrived, he {verb_past} right into the table and
+  spilled {number} bowls of soup onto {customer_name}'s {body_part}.
+  It was {adjective_2} and piping hot!
+
+  "{exclamation}!" yelled {customer_name}, leaping onto the chair.
+  The whole restaurant turned to stare. In the end, they got their
+  meal for free — and a very sincere apology from the chef.
+"""
+    },
+    {
+        "title": "🎤 The Pop Star",
+        "blanks": [
+            ("star_name",       "a pop star name"),
+            ("city",            "a city name"),
+            ("adjective_1",     "an adjective"),
+            ("dance_move",      "a dance move"),
+            ("instrument",      "a musical instrument"),
+            ("number",          "a number"),
+            ("adjective_2",     "an adjective"),
+            ("animal",          "an animal"),
+            ("verb_past",       "a verb (past tense)"),
+            ("catchphrase",     "a catchphrase"),
+        ],
+        "template": """
+  The crowd in {city} went wild as the {adjective_1} pop star
+  {star_name} took the stage. Opening with the famous "{dance_move}",
+  they grabbed a {instrument} and began performing.
+
+  {number} fans fainted in the front row — it was that good.
+  The backup dancers were dressed as {adjective_2} {animal}s, and
+  they {verb_past} in perfect sync throughout the show.
+
+  At the end of the night, {star_name} leaned into the microphone
+  and whispered, "{catchphrase}" — and the stadium erupted.
+  Best. Concert. Ever.
+"""
+    },
+]
+
+HISTORY_FILE = "mad_libs_history.json"
+
+# ─── History ──────────────────────────────────────────────────────────────────
+def load_history():
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE) as f:
+            return json.load(f)
+    return []
+
+def save_history(entry):
+    history = load_history()
+    history.append(entry)
+    with open(HISTORY_FILE, "w") as f:
+        json.dump(history, f, indent=4)
+
+# ─── Core: Play a Story ───────────────────────────────────────────────────────
+def play_story(story, mode="normal"):
+    header(story["title"])
+
+    answers = {}
+    print(c("  Fill in the blanks below:\n", Color.WHITE))
+
+    if mode == "random":
+        # Auto-fill with funny random words
+        word_pools = {
+            "adjective": ["slimy","enormous","purple","furious","bouncy","invisible","crispy"],
+            "verb_past": ["exploded","sneezed","moonwalked","melted","yodeled","somersaulted"],
+            "verb_ing":  ["juggling","snoring","tap-dancing","hiccupping","waddling"],
+            "animal":    ["penguin","capybara","flamingo","narwhal","axolotl","platypus"],
+            "food":      ["spaghetti","bubble wrap","tacos","mystery soup","expired cheese"],
+            "number":    ["42","7","1000","3.14","99"],
+            "color":     ["neon green","polka-dot","transparent","rainbow","beige"],
+            "noun":      ["spatula","accordion","rubber duck","trampoline","encyclopedia"],
+            "exclamation":["Bazinga","Oh Noodles","Yikes","Great Googly Moogly","Bananas"],
+            "emotion":   ["confusion","absolute joy","mild panic","pure silliness","wonder"],
+            "body_part": ["elbow","left nostril","kneecap","earlobe","pinky toe"],
+            "name":      ["Bob","Zara","Professor Quack","Maximilian","Bloop"],
+            "city":      ["Bananapolis","New Wobble","Quacktown","Fizzburg"],
+            "subject":   ["Underwater Basket-Weaving","Advanced Napping","Goat Studies"],
+        }
+        for key, hint in story["blanks"]:
+            best = "name"
+            for pool_key in word_pools:
+                if pool_key in key or pool_key in hint.lower():
+                    best = pool_key
+                    break
+            answers[key] = random.choice(word_pools[best])
+            print(f"  {c(hint.capitalize()+':', Color.CYAN):<40} {c(answers[key], Color.MAGENTA)}")
+    else:
+        for key, hint in story["blanks"]:
+            while True:
+                val = input(c(f"  {hint.capitalize()}: ", Color.CYAN)).strip()
+                if val:
+                    answers[key] = val
+                    break
+                print(c("  ✖  Please enter a value.", Color.RED))
+
+    # Render story
+    result = story["template"].format(**answers)
+
+    print()
+    divider("═")
+    print(c(f"  🎉  {story['title']}", Color.YELLOW + Color.BOLD))
+    divider("═")
+    print(c(result, Color.WHITE))
+    divider()
+
+    # Save to history
+    save_history({
+        "title":    story["title"],
+        "date":     datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "answers":  answers,
+        "story":    result.strip()
+    })
+
+    # Option to export
+    export = input(c("  Save this story to a text file? (y/n): ", Color.YELLOW)).strip().lower()
+    if export == "y":
+        fname = f"madlib_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        with open(fname, "w") as f:
+            f.write(f"{story['title']}\n{'='*60}\n{result}\n")
+            f.write("\nYour answers:\n")
+            for key, val in answers.items():
+                f.write(f"  {key}: {val}\n")
+        print(c(f"  ✔  Saved as '{fname}'", Color.GREEN))
+
+    pause()
+
+# ─── View History ─────────────────────────────────────────────────────────────
+def view_history():
+    header("STORY HISTORY")
+    history = load_history()
+    if not history:
+        print(c("  No stories generated yet!", Color.YELLOW))
+        pause()
+        return
+
+    print(c(f"  {len(history)} stories generated so far:\n", Color.CYAN))
+    for i, entry in enumerate(reversed(history[-10:]), 1):
+        print(f"  {c(str(i), Color.MAGENTA)}. {c(entry['title'], Color.WHITE + Color.BOLD)}  "
+              f"— {c(entry['date'], Color.YELLOW)}")
+        preview = entry["story"][:120].replace("\n", " ").strip()
+        print(f"     {c(preview + '...', Color.CYAN)}")
+        print()
+    divider()
+    pause()
+
+# ─── Choose Story ─────────────────────────────────────────────────────────────
+def choose_story():
+    header("CHOOSE A STORY")
+    for i, story in enumerate(STORIES, 1):
+        print(f"  {c(str(i), Color.CYAN + Color.BOLD)}.  {story['title']}")
+        blanks_preview = ", ".join(h for _, h in story["blanks"][:4]) + "..."
+        print(f"      {c('Needs:', Color.YELLOW)} {blanks_preview}\n")
+    print(f"  {c('R', Color.MAGENTA + Color.BOLD)}.  🎲 Random Story")
+    divider()
+
+    while True:
+        raw = input(c("  Your choice: ", Color.YELLOW)).strip().upper()
+        if raw == "R":
+            return random.choice(STORIES)
+        try:
+            idx = int(raw)
+            if 1 <= idx <= len(STORIES):
+                return STORIES[idx - 1]
+        except ValueError:
+            pass
+        print(c("  ✖  Invalid choice.", Color.RED))
+
+# ─── Main Menu ────────────────────────────────────────────────────────────────
+def main():
+    while True:
+        header("MAIN MENU")
+        print(c("""
+  1.  ✍️   Play Mad Libs  (you fill the blanks)
+  2.  🎲  Random Mode    (auto-filled with funny words)
+  3.  📜  View History
+  0.  🚪  Exit
+""", Color.WHITE))
+        divider()
+        choice = input(c("  Enter choice: ", Color.YELLOW)).strip()
+
+        if choice == "1":
+            story = choose_story()
+            play_story(story, mode="normal")
+        elif choice == "2":
+            story = choose_story()
+            play_story(story, mode="random")
+        elif choice == "3":
+            view_history()
+        elif choice == "0":
+            clear()
+            print(c("\n  👋  Thanks for playing Mad Libs! Goodbye!\n", Color.GREEN + Color.BOLD))
+            break
+        else:
+            print(c("  ✖  Invalid choice.", Color.RED))
+            pause()
+
+if __name__ == "__main__":
+    main()
