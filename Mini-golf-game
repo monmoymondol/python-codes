@@ -1,0 +1,90 @@
+import random
+
+WIDTH = 10
+HEIGHT = 10
+
+def create_course():
+    course = [[' ' for _ in range(WIDTH)] for _ in range(HEIGHT)]
+
+    # Place hole
+    hole_x = random.randint(2, WIDTH-2)
+    hole_y = random.randint(2, HEIGHT-2)
+    course[hole_y][hole_x] = 'H'
+
+    # Place obstacles
+    for _ in range(random.randint(8, 12)):
+        x = random.randint(1, WIDTH-2)
+        y = random.randint(1, HEIGHT-2)
+        if course[y][x] == ' ':
+            course[y][x] = 'X'
+
+    return course, hole_x, hole_y
+
+
+def display(course, ball_x, ball_y):
+    print("\n" + "═" * (WIDTH*2 + 3))
+    for y in range(HEIGHT):
+        print("║", end=" ")
+        for x in range(WIDTH):
+            if x == ball_x and y == ball_y:
+                print("🟢", end=" ")
+            elif course[y][x] == 'H':
+                print("⛳", end=" ")
+            elif course[y][x] == 'X':
+                print("🟥", end=" ")
+            else:
+                print("·", end=" ")
+        print("║")
+    print("═" * (WIDTH*2 + 3))
+
+
+def play():
+    course, hole_x, hole_y = create_course()
+
+    ball_x, ball_y = 0, 0  # Start position
+
+    print("⛳ Mini Golf Game")
+    print("Goal: Reach the hole!")
+    print("Controls: w=up, s=down, a=left, d=right\n")
+
+    while True:
+        display(course, ball_x, ball_y)
+
+        move = input("Move (w/a/s/d): ").lower()
+
+        new_x, new_y = ball_x, ball_y
+
+        if move == 'w':
+            new_y -= 1
+        elif move == 's':
+            new_y += 1
+        elif move == 'a':
+            new_x -= 1
+        elif move == 'd':
+            new_x += 1
+        else:
+            print("⚠️ Invalid input!")
+            continue
+
+        # Boundary check
+        if not (0 <= new_x < WIDTH and 0 <= new_y < HEIGHT):
+            print("🚫 You hit the boundary!")
+            continue
+
+        # Obstacle check
+        if course[new_y][new_x] == 'X':
+            print("💥 Hit obstacle! Game Over!")
+            break
+
+        # Move ball
+        ball_x, ball_y = new_x, new_y
+
+        # Win condition
+        if ball_x == hole_x and ball_y == hole_y:
+            display(course, ball_x, ball_y)
+            print("🎉 HOLE IN ONE! You win!")
+            break
+
+
+if __name__ == "__main__":
+    play()
