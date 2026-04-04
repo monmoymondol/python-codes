@@ -1,0 +1,130 @@
+import pygame
+import sys
+
+pygame.init()
+
+# Screen
+WIDTH, HEIGHT = 900, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Tower of Hanoi - Visual")
+
+clock = pygame.time.Clock()
+
+# Colors
+BG = (30, 30, 40)
+TOWER_COLOR = (200, 200, 200)
+BASE_COLOR = (100, 100, 100)
+HIGHLIGHT = (255, 255, 0)
+
+DISK_COLORS = [(255, 100, 100), (100, 255, 100), (100, 100, 255)]
+DISK_WIDTHS = [220, 170, 120]
+DISK_HEIGHT = 20
+
+NUM_DISKS = 3
+
+# Towers
+towers = [[], [], []]
+tower_positions = [(200, 450), (450, 450), (700, 450)]
+
+selected_tower = None
+moves = 0
+
+# Initialize disks
+for i in range(NUM_DISKS, 0, -1):
+    towers[0].append(i)
+
+
+def draw_base():
+    pygame.draw.rect(screen, BASE_COLOR, (0, 450, WIDTH, 10))
+
+
+def draw_towers():
+    for i, (x, y) in enumerate(tower_positions):
+        color = HIGHLIGHT if selected_tower == i else TOWER_COLOR
+        pygame.draw.rect(screen, color, (x - 5, y - 200, 10, 200))
+
+
+def draw_disks():
+    for i, tower in enumerate(towers):
+        tower_x, tower_y = tower_positions[i]
+
+        for j, disk in enumerate(tower):
+            width = DISK_WIDTHS[disk - 1]
+            color = DISK_COLORS[disk - 1]
+
+            x = tower_x - width // 2
+            y = tower_y - (j + 1) * DISK_HEIGHT
+
+            pygame.draw.rect(screen, color, (x, y, width, DISK_HEIGHT), border_radius=5)
+
+
+def valid_move(src, dst):
+    if not towers[src]:
+        return False
+    if not towers[dst]:
+        return True
+    return towers[src][-1] < towers[dst][-1]
+
+
+def move_disk(src, dst):
+    global moves
+    if valid_move(src, dst):
+        disk = towers[src].pop()
+        towers[dst].append(disk)
+        moves += 1
+        return True
+    return False
+
+
+def check_win():
+    return len(towers[2]) == NUM_DISKS
+
+
+def draw_text():
+    font = pygame.font.Font(None, 36)
+    text = font.render(f"Moves: {moves}", True, (255, 255, 255))
+    screen.blit(text, (20, 20))
+
+
+def draw_win():
+    font = pygame.font.Font(None, 50)
+    text = font.render(f"🎉 You solved it in {moves} moves!", True, (255, 255, 0))
+    screen.blit(text, (WIDTH//2 - 250, HEIGHT//2 - 25))
+
+
+def main():
+    global selected_tower
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+
+                for i, (tx, ty) in enumerate(tower_positions):
+                    if tx - 100 < x < tx + 100:
+                        if selected_tower is None:
+                            selected_tower = i
+                        else:
+                            move_disk(selected_tower, i)
+                            selected_tower = None
+
+        screen.fill(BG)
+
+        draw_base()
+        draw_towers()
+        draw_disks()
+        draw_text()
+
+        if check_win():
+            draw_win()
+
+        pygame.display.flip()
+        clock.tick(60)
+
+
+if __name__ == "__main__":
+    main()
