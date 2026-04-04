@@ -1,0 +1,106 @@
+class ChessGame:
+    def __init__(self):
+        self.board = self.setup_board()
+        self.current_player = "White"
+
+        # Unicode pieces
+        self.pieces = {
+            "wK": "♔", "wQ": "♕", "wR": "♖", "wB": "♗", "wN": "♘", "wp": "♙",
+            "bK": "♚", "bQ": "♛", "bR": "♜", "bB": "♝", "bN": "♞", "bp": "♟",
+            "  ": " "
+        }
+
+    def setup_board(self):
+        return [
+            ["bR","bN","bB","bQ","bK","bB","bN","bR"],
+            ["bp","bp","bp","bp","bp","bp","bp","bp"],
+            ["  ","  ","  ","  ","  ","  ","  ","  "],
+            ["  ","  ","  ","  ","  ","  ","  ","  "],
+            ["  ","  ","  ","  ","  ","  ","  ","  "],
+            ["  ","  ","  ","  ","  ","  ","  ","  "],
+            ["wp","wp","wp","wp","wp","wp","wp","wp"],
+            ["wR","wN","wB","wQ","wK","wB","wN","wR"]
+        ]
+
+    def print_board(self):
+        print("\n    a   b   c   d   e   f   g   h")
+        print("  +" + "---+" * 8)
+
+        for i in range(8):
+            row = self.board[i]
+            print(f"{8-i} |", end="")
+
+            for j in range(8):
+                piece = self.pieces[row[j]]
+
+                # Color squares
+                if (i + j) % 2 == 0:
+                    print(f"\033[47m {piece} \033[0m|", end="")  # White square
+                else:
+                    print(f"\033[46m {piece} \033[0m|", end="")  # Cyan square
+
+            print(f" {8-i}")
+            print("  +" + "---+" * 8)
+
+        print("    a   b   c   d   e   f   g   h\n")
+
+    def is_valid_move(self, start, end):
+        if not (0 <= start[0] < 8 and 0 <= start[1] < 8 and
+                0 <= end[0] < 8 and 0 <= end[1] < 8):
+            return False
+
+        piece = self.board[start[0]][start[1]]
+        target = self.board[end[0]][end[1]]
+
+        if piece == "  ":
+            return False
+
+        if self.current_player == "White" and piece[0] != "w":
+            return False
+        if self.current_player == "Black" and piece[0] != "b":
+            return False
+
+        if target == "  " or target[0] != piece[0]:
+            return True
+
+        return False
+
+    def move_piece(self, start, end):
+        if self.is_valid_move(start, end):
+            self.board[end[0]][end[1]] = self.board[start[0]][start[1]]
+            self.board[start[0]][start[1]] = "  "
+            return True
+        return False
+
+    def parse_input(self, pos):
+        try:
+            col = ord(pos[0]) - ord('a')
+            row = 8 - int(pos[1])
+            return (row, col)
+        except:
+            return None
+
+    def play_game(self):
+        while True:
+            self.print_board()
+            print(f"🎯 {self.current_player}'s Turn")
+
+            start = input("From (e.g., e2): ").lower()
+            end = input("To (e.g., e4): ").lower()
+
+            start_pos = self.parse_input(start)
+            end_pos = self.parse_input(end)
+
+            if not start_pos or not end_pos:
+                print("⚠️ Invalid input format!")
+                continue
+
+            if self.move_piece(start_pos, end_pos):
+                self.current_player = "Black" if self.current_player == "White" else "White"
+            else:
+                print("❌ Invalid move! Try again.")
+
+
+if __name__ == "__main__":
+    game = ChessGame()
+    game.play_game()
