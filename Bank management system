@@ -1,0 +1,900 @@
+"""
+╔══════════════════════════════════════════════════════════════╗
+║           PYTHON BANK MANAGEMENT SYSTEM                     ║
+║           Full-Featured CLI Banking Application             ║
+╚══════════════════════════════════════════════════════════════╝
+
+Features:
+  - Account creation (Savings / Current / Fixed Deposit)
+  - Deposit, Withdraw, Transfer funds
+  - Transaction history with timestamps
+  - Interest calculation
+  - Loan management
+  - Admin panel
+  - Data persistence via JSON
+  - Password hashing (SHA-256)
+"""
+
+import json
+import os
+import hashlib
+import random
+import string
+from datetime import datetime, timedelta
+from typing import Optional
+
+# ─── CONFIG ───────────────────────────────────────────────────────────────────
+DATA_FILE = "bank_data.json"
+ADMIN_PASSWORD_HASH = hashlib.sha256("admin123".encode()).hexdigest()
+
+INTEREST_RATES = {
+    "savings": 4.0,        # 4% per year
+    "current": 0.0,        # No interest
+    "fixed_deposit": 7.5,  # 7.5% per year
+}
+
+LOAN_INTEREST_RATE = 10.0  # 10% per year
+
+
+# ─── UTILITY HELPERS ──────────────────────────────────────────────────────────
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def generate_account_number() -> str:
+    return "ACC" + "".join(random.choices(string.digits, k=9))
+
+
+def generate_loan_id() -> str:
+    return "LN" + "".join(random.choices(string.digits, k=8))
+
+
+def get_timestamp() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def clear_screen():
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def print_header(title: str):
+    width = 60
+    print("\n" + "═" * width)
+    print(f"  {title}")
+    print("═" * width)
+
+
+def print_success(msg: str):
+    print(f"\n  ✔  {msg}")
+
+
+def print_error(msg: str):
+    print(f"\n  ✘  {msg}")
+
+
+def print_info(msg: str):
+    print(f"     {msg}")
+
+
+def pause():
+    input("\n  Press Enter to continue...")
+
+
+def format_currency(amount: float) -> str:
+    return f"৳{amount:,.2f}"
+
+
+# ─── DATA PERSISTENCE ─────────────────────────────────────────────────────────
+def load_data() -> dict:
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    return {"accounts": {}, "loans": {}}
+
+
+def save_data(data: dict):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+# ─── ACCOUNT CLASS ────────────────────────────────────────────────────────────
+class Account:
+    def __init__(
+        self,
+        account_number: str,
+        owner_name: str,
+        email: str,
+        phone: str,
+        password_hash: str,
+        account_type: str,
+        balance: float = 0.0,
+        transactions: list = None,
+        created_at: str = None,
+        is_active: bool = True,
+        fixed_deposit_maturity: str = None,
+    ):
+        self.account_number = account_number
+        self.owner_name = owner_name
+        self.email = email
+        self.phone = phone
+        self.password_hash = password_hash
+        self.account_type = account_type
+        self.balance = balance
+        self.transactions = transactions or []
+        self.created_at = created_at or get_timestamp()
+        self.is_active = is_active
+        self.fixed_deposit_maturity = fixed_deposit_maturity
+
+    def to_dict(self) -> dict:
+        return self.__dict__
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Account":
+        return cls(**d)
+
+    def add_transaction(self, txn_type: str, amount: float, description: str, balance_after: float):
+        self.transactions.append({
+            "id": "TXN" + "".join(random.choices(string.digits, k=8)),
+            "type": txn_type,
+            "amount": amount,
+            "description": description,
+            "balance_after": balance_after,
+            "timestamp": get_timestamp(),
+        })
+
+    def deposit(self, amount: float, description: str = "Deposit") -> bool:
+        if amount <= 0:
+            return False
+        self.balance += amount
+        self.add_transaction("CREDIT", amount, description, self.balance)
+        return True
+
+    def withdraw(self, amount: float, description: str = "Withdrawal") -> tuple:
+        if amount <= 0:
+            return False, "Amount must be positive."
+        if amount > self.balance:
+            return False, "Insufficient funds."
+        if not self.is_active:
+            return False, "Account is inactive."
+        self.balance -= amount
+        self.add_transaction("DEBIT", amount, description, self.balance)
+        return True, "Success"
+
+    def apply_interest(self):
+        rate = INTEREST_RATES.get(self.account_type, 0.0)
+        if rate > 0:
+            interest = round(self.balance * (rate / 100) / 12, 2)  # monthly
+            if interest > 0:
+                self.balance += interest
+                self.add_transaction("CREDIT", interest, f"Monthly Interest ({rate}% p.a.)", self.balance)
+                return interest
+        return 0.0
+
+
+# ─── LOAN CLASS ───────────────────────────────────────────────────────────────
+class Loan:
+    def __init__(
+        self,
+        loan_id: str,
+        account_number: str,
+        principal: float,
+        interest_rate: float,
+        term_months: int,
+        amount_paid: float = 0.0,
+        status: str = "active",
+        created_at: str = None,
+    ):
+        self.loan_id = loan_id
+        self.account_number = account_number
+        self.principal = principal
+        self.interest_rate = interest_rate
+        self.term_months = term_months
+        self.amount_paid = amount_paid
+        self.status = status
+        self.created_at = created_at or get_timestamp()
+
+    @property
+    def total_payable(self) -> float:
+        return round(self.principal * (1 + self.interest_rate / 100 * self.term_months / 12), 2)
+
+    @property
+    def outstanding(self) -> float:
+        return round(max(self.total_payable - self.amount_paid, 0), 2)
+
+    @property
+    def monthly_emi(self) -> float:
+        return round(self.total_payable / self.term_months, 2)
+
+    def to_dict(self) -> dict:
+        return self.__dict__
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Loan":
+        return cls(**d)
+
+
+# ─── BANK CLASS ───────────────────────────────────────────────────────────────
+class Bank:
+    def __init__(self):
+        raw = load_data()
+        self.accounts: dict[str, Account] = {
+            k: Account.from_dict(v) for k, v in raw.get("accounts", {}).items()
+        }
+        self.loans: dict[str, Loan] = {
+            k: Loan.from_dict(v) for k, v in raw.get("loans", {}).items()
+        }
+
+    def save(self):
+        save_data({
+            "accounts": {k: v.to_dict() for k, v in self.accounts.items()},
+            "loans": {k: v.to_dict() for k, v in self.loans.items()},
+        })
+
+    def find_account(self, account_number: str) -> Optional[Account]:
+        return self.accounts.get(account_number)
+
+    def authenticate(self, account_number: str, password: str) -> Optional[Account]:
+        acc = self.find_account(account_number)
+        if acc and acc.password_hash == hash_password(password):
+            return acc
+        return None
+
+    def create_account(
+        self, name: str, email: str, phone: str, password: str, account_type: str, initial_deposit: float = 0.0
+    ) -> Account:
+        acc_num = generate_account_number()
+        while acc_num in self.accounts:
+            acc_num = generate_account_number()
+
+        maturity = None
+        if account_type == "fixed_deposit":
+            maturity = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
+
+        acc = Account(
+            account_number=acc_num,
+            owner_name=name,
+            email=email,
+            phone=phone,
+            password_hash=hash_password(password),
+            account_type=account_type,
+            balance=0.0,
+            fixed_deposit_maturity=maturity,
+        )
+        if initial_deposit > 0:
+            acc.deposit(initial_deposit, "Initial Deposit")
+
+        self.accounts[acc_num] = acc
+        self.save()
+        return acc
+
+    def transfer(self, from_acc: Account, to_acc_num: str, amount: float) -> tuple:
+        to_acc = self.find_account(to_acc_num)
+        if not to_acc:
+            return False, "Destination account not found."
+        if not to_acc.is_active:
+            return False, "Destination account is inactive."
+        if from_acc.account_number == to_acc_num:
+            return False, "Cannot transfer to the same account."
+
+        ok, msg = from_acc.withdraw(amount, f"Transfer to {to_acc_num}")
+        if not ok:
+            return False, msg
+        to_acc.deposit(amount, f"Transfer from {from_acc.account_number}")
+        self.save()
+        return True, "Transfer successful."
+
+    def apply_for_loan(self, acc: Account, principal: float, term_months: int) -> tuple:
+        # Check if user already has active loan
+        existing = [l for l in self.loans.values() if l.account_number == acc.account_number and l.status == "active"]
+        if existing:
+            return False, "You already have an active loan."
+        if principal <= 0:
+            return False, "Invalid loan amount."
+        if term_months not in [6, 12, 24, 36, 60]:
+            return False, "Invalid term. Choose from 6, 12, 24, 36, or 60 months."
+
+        loan_id = generate_loan_id()
+        loan = Loan(
+            loan_id=loan_id,
+            account_number=acc.account_number,
+            principal=principal,
+            interest_rate=LOAN_INTEREST_RATE,
+            term_months=term_months,
+        )
+        acc.deposit(principal, f"Loan Disbursement ({loan_id})")
+        self.loans[loan_id] = loan
+        self.save()
+        return True, loan
+
+    def repay_loan(self, acc: Account, loan_id: str, amount: float) -> tuple:
+        loan = self.loans.get(loan_id)
+        if not loan or loan.account_number != acc.account_number:
+            return False, "Loan not found."
+        if loan.status != "active":
+            return False, "Loan is already closed."
+        if amount > loan.outstanding:
+            amount = loan.outstanding  # cap repayment
+        ok, msg = acc.withdraw(amount, f"Loan Repayment ({loan_id})")
+        if not ok:
+            return False, msg
+        loan.amount_paid += amount
+        if loan.outstanding <= 0:
+            loan.status = "closed"
+        self.save()
+        return True, f"Repayment of {format_currency(amount)} successful."
+
+
+# ─── UI SCREENS ───────────────────────────────────────────────────────────────
+bank = Bank()
+
+
+def main_menu():
+    while True:
+        clear_screen()
+        print("""
+  ╔═══════════════════════════════════════════╗
+  ║    🏦  PYTHON NATIONAL BANK               ║
+  ║        Your Trusted Financial Partner     ║
+  ╚═══════════════════════════════════════════╝
+
+  [1]  Create New Account
+  [2]  Login to Account
+  [3]  Admin Panel
+  [0]  Exit
+""")
+        choice = input("  Enter choice: ").strip()
+        if choice == "1":
+            create_account_screen()
+        elif choice == "2":
+            login_screen()
+        elif choice == "3":
+            admin_login_screen()
+        elif choice == "0":
+            print("\n  Thank you for banking with us. Goodbye!\n")
+            break
+        else:
+            print_error("Invalid option.")
+            pause()
+
+
+# ─── CREATE ACCOUNT ───────────────────────────────────────────────────────────
+def create_account_screen():
+    print_header("OPEN A NEW ACCOUNT")
+    try:
+        name = input("  Full Name        : ").strip()
+        if not name:
+            print_error("Name cannot be empty.")
+            pause()
+            return
+
+        email = input("  Email Address    : ").strip()
+        phone = input("  Phone Number     : ").strip()
+
+        print("\n  Account Types:")
+        print("    [1] Savings Account    (4.0% interest p.a.)")
+        print("    [2] Current Account    (0% interest)")
+        print("    [3] Fixed Deposit      (7.5% interest p.a., 1-year lock-in)")
+        acc_type_choice = input("\n  Select type [1/2/3]: ").strip()
+        type_map = {"1": "savings", "2": "current", "3": "fixed_deposit"}
+        acc_type = type_map.get(acc_type_choice)
+        if not acc_type:
+            print_error("Invalid account type.")
+            pause()
+            return
+
+        password = input("  Set Password     : ").strip()
+        confirm = input("  Confirm Password : ").strip()
+        if password != confirm:
+            print_error("Passwords do not match.")
+            pause()
+            return
+        if len(password) < 4:
+            print_error("Password must be at least 4 characters.")
+            pause()
+            return
+
+        initial_deposit_str = input("  Initial Deposit  : ৳").strip()
+        try:
+            initial_deposit = float(initial_deposit_str)
+        except ValueError:
+            initial_deposit = 0.0
+
+        if acc_type == "fixed_deposit" and initial_deposit < 1000:
+            print_error("Fixed Deposit requires a minimum deposit of ৳1,000.")
+            pause()
+            return
+
+        acc = bank.create_account(name, email, phone, password, acc_type, initial_deposit)
+
+        print_success(f"Account created successfully!")
+        print_info(f"Account Number : {acc.account_number}")
+        print_info(f"Account Type   : {acc_type.replace('_', ' ').title()}")
+        print_info(f"Opening Balance: {format_currency(acc.balance)}")
+        if acc.fixed_deposit_maturity:
+            print_info(f"Maturity Date  : {acc.fixed_deposit_maturity}")
+
+    except KeyboardInterrupt:
+        pass
+    pause()
+
+
+# ─── LOGIN ────────────────────────────────────────────────────────────────────
+def login_screen():
+    print_header("ACCOUNT LOGIN")
+    acc_num = input("  Account Number : ").strip().upper()
+    password = input("  Password       : ").strip()
+
+    acc = bank.authenticate(acc_num, password)
+    if not acc:
+        print_error("Invalid account number or password.")
+        pause()
+        return
+    if not acc.is_active:
+        print_error("Your account has been deactivated. Contact support.")
+        pause()
+        return
+
+    account_dashboard(acc)
+
+
+# ─── ACCOUNT DASHBOARD ────────────────────────────────────────────────────────
+def account_dashboard(acc: Account):
+    while True:
+        clear_screen()
+        print(f"""
+  ╔═══════════════════════════════════════════╗
+  ║  Welcome, {acc.owner_name[:28]:<28} ║
+  ║  {acc.account_number}  │  {acc.account_type.replace("_"," ").title():<20}  ║
+  ╚═══════════════════════════════════════════╝
+
+  Balance: {format_currency(acc.balance):>15}
+
+  [1]  Deposit
+  [2]  Withdraw
+  [3]  Transfer Funds
+  [4]  Transaction History
+  [5]  Account Details
+  [6]  Apply for Loan
+  [7]  Loan Repayment
+  [8]  Apply Monthly Interest
+  [9]  Change Password
+  [0]  Logout
+""")
+        choice = input("  Enter choice: ").strip()
+        if choice == "1":
+            deposit_screen(acc)
+        elif choice == "2":
+            withdraw_screen(acc)
+        elif choice == "3":
+            transfer_screen(acc)
+        elif choice == "4":
+            transaction_history_screen(acc)
+        elif choice == "5":
+            account_details_screen(acc)
+        elif choice == "6":
+            loan_apply_screen(acc)
+        elif choice == "7":
+            loan_repay_screen(acc)
+        elif choice == "8":
+            apply_interest_screen(acc)
+        elif choice == "9":
+            change_password_screen(acc)
+        elif choice == "0":
+            print_success("Logged out successfully.")
+            pause()
+            break
+        else:
+            print_error("Invalid option.")
+            pause()
+
+
+# ─── DEPOSIT ──────────────────────────────────────────────────────────────────
+def deposit_screen(acc: Account):
+    print_header("DEPOSIT FUNDS")
+    try:
+        amount = float(input("  Amount to Deposit : ৳").strip())
+        desc = input("  Description (optional): ").strip() or "Cash Deposit"
+        if acc.deposit(amount, desc):
+            bank.save()
+            print_success(f"Deposited {format_currency(amount)} successfully.")
+            print_info(f"New Balance: {format_currency(acc.balance)}")
+        else:
+            print_error("Invalid amount.")
+    except ValueError:
+        print_error("Please enter a valid number.")
+    pause()
+
+
+# ─── WITHDRAW ─────────────────────────────────────────────────────────────────
+def withdraw_screen(acc: Account):
+    print_header("WITHDRAW FUNDS")
+    if acc.account_type == "fixed_deposit":
+        if acc.fixed_deposit_maturity:
+            maturity = datetime.strptime(acc.fixed_deposit_maturity, "%Y-%m-%d")
+            if datetime.now() < maturity:
+                print_error(f"Fixed Deposit locked until {acc.fixed_deposit_maturity}.")
+                pause()
+                return
+    try:
+        amount = float(input("  Amount to Withdraw : ৳").strip())
+        desc = input("  Description (optional): ").strip() or "Cash Withdrawal"
+        ok, msg = acc.withdraw(amount, desc)
+        if ok:
+            bank.save()
+            print_success(f"Withdrew {format_currency(amount)} successfully.")
+            print_info(f"New Balance: {format_currency(acc.balance)}")
+        else:
+            print_error(msg)
+    except ValueError:
+        print_error("Please enter a valid number.")
+    pause()
+
+
+# ─── TRANSFER ─────────────────────────────────────────────────────────────────
+def transfer_screen(acc: Account):
+    print_header("TRANSFER FUNDS")
+    to_acc_num = input("  Recipient Account No : ").strip().upper()
+    to_acc = bank.find_account(to_acc_num)
+    if not to_acc:
+        print_error("Recipient account not found.")
+        pause()
+        return
+    print_info(f"Recipient: {to_acc.owner_name}")
+    try:
+        amount = float(input("  Amount to Transfer : ৳").strip())
+        confirm = input(f"  Confirm transfer of {format_currency(amount)} to {to_acc.owner_name}? [y/n]: ").strip().lower()
+        if confirm != "y":
+            print_info("Transfer cancelled.")
+            pause()
+            return
+        ok, msg = bank.transfer(acc, to_acc_num, amount)
+        if ok:
+            print_success(msg)
+            print_info(f"New Balance: {format_currency(acc.balance)}")
+        else:
+            print_error(msg)
+    except ValueError:
+        print_error("Please enter a valid number.")
+    pause()
+
+
+# ─── TRANSACTION HISTORY ──────────────────────────────────────────────────────
+def transaction_history_screen(acc: Account):
+    print_header(f"TRANSACTION HISTORY — {acc.account_number}")
+    txns = acc.transactions[-20:]  # Last 20
+    if not txns:
+        print_info("No transactions yet.")
+    else:
+        print(f"\n  {'ID':<14} {'Type':<8} {'Amount':>12} {'Balance After':>14}  Description")
+        print("  " + "-" * 70)
+        for t in reversed(txns):
+            arrow = "+" if t["type"] == "CREDIT" else "-"
+            print(
+                f"  {t['id']:<14} {t['type']:<8} "
+                f"{arrow}{format_currency(t['amount']):>11} "
+                f"{format_currency(t['balance_after']):>14}  "
+                f"{t['description'][:25]}"
+            )
+            print(f"  {'':14} {'':8} {'':>12} {'':>14}  {t['timestamp']}")
+        print(f"\n  Showing last {len(txns)} transactions.")
+    pause()
+
+
+# ─── ACCOUNT DETAILS ──────────────────────────────────────────────────────────
+def account_details_screen(acc: Account):
+    print_header("ACCOUNT DETAILS")
+    print(f"""
+  Account Number : {acc.account_number}
+  Account Holder : {acc.owner_name}
+  Account Type   : {acc.account_type.replace("_", " ").title()}
+  Email          : {acc.email}
+  Phone          : {acc.phone}
+  Balance        : {format_currency(acc.balance)}
+  Interest Rate  : {INTEREST_RATES.get(acc.account_type, 0)}% p.a.
+  Status         : {"Active ✔" if acc.is_active else "Inactive ✘"}
+  Account Opened : {acc.created_at}
+""")
+    if acc.fixed_deposit_maturity:
+        print(f"  Maturity Date  : {acc.fixed_deposit_maturity}")
+    pause()
+
+
+# ─── APPLY FOR LOAN ───────────────────────────────────────────────────────────
+def loan_apply_screen(acc: Account):
+    print_header("APPLY FOR LOAN")
+    print(f"  Interest Rate: {LOAN_INTEREST_RATE}% p.a.\n")
+    print("  Available terms: 6, 12, 24, 36, 60 months\n")
+    try:
+        principal = float(input("  Loan Amount    : ৳").strip())
+        term = int(input("  Loan Term (months): ").strip())
+
+        # Show EMI preview
+        dummy = Loan("PREVIEW", acc.account_number, principal, LOAN_INTEREST_RATE, term)
+        print_info(f"Total Payable : {format_currency(dummy.total_payable)}")
+        print_info(f"Monthly EMI   : {format_currency(dummy.monthly_emi)}")
+
+        confirm = input("\n  Confirm loan application? [y/n]: ").strip().lower()
+        if confirm != "y":
+            print_info("Loan application cancelled.")
+            pause()
+            return
+
+        ok, result = bank.apply_for_loan(acc, principal, term)
+        if ok:
+            loan: Loan = result
+            print_success("Loan approved and amount disbursed!")
+            print_info(f"Loan ID       : {loan.loan_id}")
+            print_info(f"Principal     : {format_currency(loan.principal)}")
+            print_info(f"Total Payable : {format_currency(loan.total_payable)}")
+            print_info(f"Monthly EMI   : {format_currency(loan.monthly_emi)}")
+            print_info(f"New Balance   : {format_currency(acc.balance)}")
+        else:
+            print_error(result)
+    except ValueError:
+        print_error("Please enter a valid number.")
+    pause()
+
+
+# ─── LOAN REPAYMENT ───────────────────────────────────────────────────────────
+def loan_repay_screen(acc: Account):
+    print_header("LOAN REPAYMENT")
+    my_loans = [l for l in bank.loans.values() if l.account_number == acc.account_number and l.status == "active"]
+    if not my_loans:
+        print_info("You have no active loans.")
+        pause()
+        return
+
+    for loan in my_loans:
+        print(f"\n  Loan ID    : {loan.loan_id}")
+        print_info(f"Principal  : {format_currency(loan.principal)}")
+        print_info(f"Outstanding: {format_currency(loan.outstanding)}")
+        print_info(f"Monthly EMI: {format_currency(loan.monthly_emi)}")
+
+    loan_id = input("\n  Enter Loan ID to repay: ").strip().upper()
+    try:
+        amount = float(input("  Repayment Amount : ৳").strip())
+        ok, msg = bank.repay_loan(acc, loan_id, amount)
+        if ok:
+            print_success(msg)
+            loan = bank.loans.get(loan_id)
+            if loan:
+                status = "CLOSED ✔" if loan.status == "closed" else f"Outstanding: {format_currency(loan.outstanding)}"
+                print_info(f"Loan Status: {status}")
+        else:
+            print_error(msg)
+    except ValueError:
+        print_error("Please enter a valid number.")
+    pause()
+
+
+# ─── APPLY INTEREST ───────────────────────────────────────────────────────────
+def apply_interest_screen(acc: Account):
+    print_header("APPLY MONTHLY INTEREST")
+    rate = INTEREST_RATES.get(acc.account_type, 0.0)
+    if rate == 0:
+        print_info("Your account type does not earn interest.")
+        pause()
+        return
+    interest = acc.apply_interest()
+    if interest > 0:
+        bank.save()
+        print_success(f"Interest of {format_currency(interest)} applied.")
+        print_info(f"New Balance: {format_currency(acc.balance)}")
+    else:
+        print_info("No interest applied (balance may be zero).")
+    pause()
+
+
+# ─── CHANGE PASSWORD ──────────────────────────────────────────────────────────
+def change_password_screen(acc: Account):
+    print_header("CHANGE PASSWORD")
+    current = input("  Current Password : ").strip()
+    if hash_password(current) != acc.password_hash:
+        print_error("Incorrect current password.")
+        pause()
+        return
+    new_pass = input("  New Password     : ").strip()
+    confirm = input("  Confirm Password : ").strip()
+    if new_pass != confirm:
+        print_error("Passwords do not match.")
+        pause()
+        return
+    if len(new_pass) < 4:
+        print_error("Password must be at least 4 characters.")
+        pause()
+        return
+    acc.password_hash = hash_password(new_pass)
+    bank.save()
+    print_success("Password changed successfully.")
+    pause()
+
+
+# ─── ADMIN PANEL ──────────────────────────────────────────────────────────────
+def admin_login_screen():
+    print_header("ADMIN LOGIN")
+    password = input("  Admin Password: ").strip()
+    if hash_password(password) != ADMIN_PASSWORD_HASH:
+        print_error("Invalid admin password.")
+        pause()
+        return
+    admin_dashboard()
+
+
+def admin_dashboard():
+    while True:
+        clear_screen()
+        total_accounts = len(bank.accounts)
+        active_accounts = sum(1 for a in bank.accounts.values() if a.is_active)
+        total_balance = sum(a.balance for a in bank.accounts.values())
+        total_loans = sum(l.outstanding for l in bank.loans.values() if l.status == "active")
+
+        print(f"""
+  ╔═══════════════════════════════════════════╗
+  ║  🔐  ADMIN PANEL                         ║
+  ╠═══════════════════════════════════════════╣
+  ║  Total Accounts : {total_accounts:<24}║
+  ║  Active Accounts: {active_accounts:<24}║
+  ║  Total Deposits : {format_currency(total_balance):<24}║
+  ║  Loan Outstanding:{format_currency(total_loans):<23}║
+  ╚═══════════════════════════════════════════╝
+
+  [1]  List All Accounts
+  [2]  Search Account
+  [3]  Activate / Deactivate Account
+  [4]  View All Loans
+  [5]  Apply Interest to All Accounts
+  [6]  Delete Account
+  [0]  Logout
+""")
+        choice = input("  Enter choice: ").strip()
+        if choice == "1":
+            admin_list_accounts()
+        elif choice == "2":
+            admin_search_account()
+        elif choice == "3":
+            admin_toggle_account()
+        elif choice == "4":
+            admin_view_loans()
+        elif choice == "5":
+            admin_apply_all_interest()
+        elif choice == "6":
+            admin_delete_account()
+        elif choice == "0":
+            break
+        else:
+            print_error("Invalid option.")
+            pause()
+
+
+def admin_list_accounts():
+    print_header("ALL ACCOUNTS")
+    if not bank.accounts:
+        print_info("No accounts found.")
+        pause()
+        return
+    print(f"\n  {'Account No':<14} {'Name':<22} {'Type':<16} {'Balance':>12}  Status")
+    print("  " + "-" * 75)
+    for acc in bank.accounts.values():
+        status = "Active" if acc.is_active else "Inactive"
+        print(
+            f"  {acc.account_number:<14} {acc.owner_name[:20]:<22} "
+            f"{acc.account_type.replace('_',' ').title():<16} "
+            f"{format_currency(acc.balance):>12}  {status}"
+        )
+    pause()
+
+
+def admin_search_account():
+    print_header("SEARCH ACCOUNT")
+    query = input("  Enter Account No or Name: ").strip().lower()
+    results = [
+        a for a in bank.accounts.values()
+        if query in a.account_number.lower() or query in a.owner_name.lower()
+    ]
+    if not results:
+        print_info("No matching accounts found.")
+    else:
+        for acc in results:
+            print(f"\n  Account No: {acc.account_number}")
+            print_info(f"Name     : {acc.owner_name}")
+            print_info(f"Type     : {acc.account_type.replace('_', ' ').title()}")
+            print_info(f"Balance  : {format_currency(acc.balance)}")
+            print_info(f"Status   : {'Active' if acc.is_active else 'Inactive'}")
+            print_info(f"Email    : {acc.email}")
+            print_info(f"Phone    : {acc.phone}")
+    pause()
+
+
+def admin_toggle_account():
+    print_header("ACTIVATE / DEACTIVATE ACCOUNT")
+    acc_num = input("  Account Number: ").strip().upper()
+    acc = bank.find_account(acc_num)
+    if not acc:
+        print_error("Account not found.")
+        pause()
+        return
+    current_status = "Active" if acc.is_active else "Inactive"
+    new_status = not acc.is_active
+    confirm = input(
+        f"  Account is currently {current_status}. {'Deactivate' if acc.is_active else 'Activate'}? [y/n]: "
+    ).strip().lower()
+    if confirm == "y":
+        acc.is_active = new_status
+        bank.save()
+        print_success(f"Account {'activated' if new_status else 'deactivated'} successfully.")
+    else:
+        print_info("No changes made.")
+    pause()
+
+
+def admin_view_loans():
+    print_header("ALL LOANS")
+    active_loans = [l for l in bank.loans.values() if l.status == "active"]
+    if not active_loans:
+        print_info("No active loans.")
+        pause()
+        return
+    print(f"\n  {'Loan ID':<12} {'Account':<14} {'Principal':>12} {'Outstanding':>13} {'EMI':>10}  Term")
+    print("  " + "-" * 75)
+    for loan in active_loans:
+        print(
+            f"  {loan.loan_id:<12} {loan.account_number:<14} "
+            f"{format_currency(loan.principal):>12} "
+            f"{format_currency(loan.outstanding):>13} "
+            f"{format_currency(loan.monthly_emi):>10}  {loan.term_months}m"
+        )
+    pause()
+
+
+def admin_apply_all_interest():
+    print_header("APPLY INTEREST TO ALL ACCOUNTS")
+    confirm = input("  Apply monthly interest to all eligible accounts? [y/n]: ").strip().lower()
+    if confirm != "y":
+        print_info("Cancelled.")
+        pause()
+        return
+    count = 0
+    total_interest = 0.0
+    for acc in bank.accounts.values():
+        if acc.is_active:
+            interest = acc.apply_interest()
+            if interest > 0:
+                count += 1
+                total_interest += interest
+    bank.save()
+    print_success(f"Interest applied to {count} accounts.")
+    print_info(f"Total Interest Paid: {format_currency(total_interest)}")
+    pause()
+
+
+def admin_delete_account():
+    print_header("DELETE ACCOUNT")
+    acc_num = input("  Account Number to Delete: ").strip().upper()
+    acc = bank.find_account(acc_num)
+    if not acc:
+        print_error("Account not found.")
+        pause()
+        return
+    if acc.balance > 0:
+        print_error(f"Cannot delete account with balance {format_currency(acc.balance)}. Withdraw funds first.")
+        pause()
+        return
+    active_loans = [l for l in bank.loans.values() if l.account_number == acc_num and l.status == "active"]
+    if active_loans:
+        print_error("Cannot delete account with active loans.")
+        pause()
+        return
+    confirm = input(f"  Delete account {acc_num} ({acc.owner_name})? This is IRREVERSIBLE. [yes]: ").strip().lower()
+    if confirm == "yes":
+        del bank.accounts[acc_num]
+        bank.save()
+        print_success("Account deleted successfully.")
+    else:
+        print_info("Deletion cancelled.")
+    pause()
+
+
+# ─── ENTRY POINT ──────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    print("\n  Initializing Python National Bank...")
+    main_menu()
