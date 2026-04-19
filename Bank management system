@@ -898,3 +898,4 @@ def admin_delete_account():
 if __name__ == "__main__":
     print("\n  Initializing Python National Bank...")
     main_menu()
+#admin password is admin123
