@@ -1,0 +1,30 @@
+Flask==3.0.3
+Werkzeug==3.0.2
+itsdangerous==2.2.0
+Jinja2==3.1.4
+click==8.1.7
+
+Optional :
+Flask-WTF==1.2.1   # For advanced forms
+Flask-Login==0.6.3 # For user session management
+
+Install everything with:
+bash
+pip install -r requirements.txt
+
+
+structures .....
+....
+
+blog_app/
+│── app.py                # Main Flask app
+│── blog.db               # SQLite database
+│── static/               # CSS, JS, images
+│   └── style.css
+│── templates/            # HTML templates
+│   ├── base.html
+│   ├── home.html
+│   ├── register.html
+│   ├── login.html
+│   └── create.html
+│── requirements.txt      # Dependencies
