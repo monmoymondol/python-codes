@@ -1,0 +1,4 @@
+body { font-family: Arial; background: #f4f4f4; margin: 20px; }
+nav a { margin-right: 15px; text-decoration: none; color: #333; }
+.post { background: #fff; padding: 10px; border-radius: 5px; }
+button { padding: 8px 15px; margin-top: 10px; }
