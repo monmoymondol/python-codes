@@ -28,3 +28,28 @@ blog_app/
 │   ├── login.html
 │   └── create.html
 │── requirements.txt      # Dependencies
+
+
+
+
+🔧 Tech Stack
+Flask → Web framework
+
+SQLite → Database
+
+Bootstrap/Custom CSS → Styling
+
+WTForms → Forms handling
+
+📑 Features
+User Authentication → Register, login, logout.
+
+Create Posts → Title, content, category, date.
+
+Edit/Delete Posts → Only by author.
+
+Comments → Readers can comment on posts.
+
+Dashboard → Manage posts and users.
+
+Responsive UI → Works on desktop and mobile.
