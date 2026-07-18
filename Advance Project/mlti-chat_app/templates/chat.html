@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multi-Room Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+</head>
+<body>
+    <h1>💬 Multi-Room Chat</h1>
+    <input id="username" placeholder="Enter your name">
+    <select id="room">
+        <option value="General">General</option>
+        <option value="Tech">Tech</option>
+        <option value="Fun">Fun</option>
+    </select>
+    <button onclick="joinRoom()">Join Room</button>
+    <button onclick="leaveRoom()">Leave Room</button>
+    <hr>
+    <div id="messages"></div>
+    <input id="message" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        var socket = io();
+        var currentRoom = "";
+
+        function joinRoom() {
+            let username = document.getElementById("username").value;
+            currentRoom = document.getElementById("room").value;
+            socket.emit("join", {username: username, room: currentRoom});
+        }
+
+        function leaveRoom() {
+            let username = document.getElementById("username").value;
+            socket.emit("leave", {username: username, room: currentRoom});
+            currentRoom = "";
+        }
+
+        function sendMessage() {
+            let username = document.getElementById("username").value;
+            let msg = document.getElementById("message").value;
+            socket.emit("message", {username: username, room: currentRoom, msg: msg});
+            document.getElementById("message").value = "";
+        }
+
+        socket.on("message", function(msg) {
+            let div = document.createElement("div");
+            div.textContent = msg;
+            document.getElementById("messages").appendChild(div);
+        });
+    </script>
+</body>
+</html>
