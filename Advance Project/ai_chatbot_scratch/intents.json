@@ -1,0 +1,24 @@
+{
+  "intents": [
+    {
+      "tag": "greeting",
+      "patterns": ["hello", "hi", "hey", "good morning"],
+      "responses": ["Hello! How can I help you?", "Hi there!"]
+    },
+    {
+      "tag": "goodbye",
+      "patterns": ["bye", "see you", "good night"],
+      "responses": ["Goodbye!", "See you soon!"]
+    },
+    {
+      "tag": "invoice",
+      "patterns": ["create invoice", "generate bill", "make receipt"],
+      "responses": ["Sure, I can generate an invoice for you."]
+    },
+    {
+      "tag": "unknown",
+      "patterns": [],
+      "responses": ["Sorry, I didn’t understand that."]
+    }
+  ]
+}
