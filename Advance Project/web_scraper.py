@@ -9,7 +9,7 @@ def scrape_site(url, output_file="scraped_data.csv"):
         print("⚠ Failed to retrieve page")
         return
     
-    # Parse HTML
+    # Parse  HTML
     soup = BeautifulSoup(response.text, "html.parser")
     
     # Example: scrape article titles + links
