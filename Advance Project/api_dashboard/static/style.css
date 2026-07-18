@@ -1,0 +1,4 @@
+body { font-family: Arial; background: #f4f4f4; margin: 20px; }
+nav a { margin-right: 15px; text-decoration: none; color: #333; }
+.card { background: #fff; padding: 15px; margin: 10px; border-radius: 5px; }
+h1 { text-align: center; }
