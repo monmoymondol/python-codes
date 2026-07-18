@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>📊 API Dashboard</h1>
+
+<div class="card">
+  <h2>🌤 Weather</h2>
+  <p>Current Temperature: {{ temperature }} °C</p>
+</div>
+
+<div class="card">
+  <h2>💰 Bitcoin Price</h2>
+  <p>USD: {{ btc_price }}</p>
+</div>
+
+<canvas id="chart"></canvas>
+<script src="{{ url_for('static', filename='chart.js') }}"></script>
+<script>
+  renderChart({{ temperature }}, "{{ btc_price }}");
+</script>
+{% endblock %}
