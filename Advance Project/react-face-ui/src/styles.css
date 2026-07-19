@@ -1,0 +1,9 @@
+body { margin: 0; font-family: Inter, Arial, sans-serif; background:#0f1720; color:#e6eef8; }
+.app { max-width: 1000px; margin: 24px auto; padding: 12px; }
+header h1 { margin: 0 0 12px 0; font-size: 20px; }
+.video-wrap { position: relative; width: 100%; max-width: 800px; background: #000; }
+.video { width: 100%; height: auto; display: block; }
+.overlay { position: absolute; left: 0; top: 0; pointer-events: none; }
+.controls { margin-top: 12px; display:flex; gap:12px; align-items:center; }
+button { padding: 8px 12px; border-radius:6px; border: none; background:#0b84ff; color:#fff; cursor:pointer; }
+button:hover { opacity: 0.95; }
