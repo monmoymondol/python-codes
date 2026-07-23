@@ -1,0 +1,14 @@
+# app.py
+from fastapi import FastAPI
+from pydantic import BaseModel
+from sentiment_analyzer import analyze_sentiment
+
+app = FastAPI(title="Sentiment Analysis Tool")
+
+class SentimentRequest(BaseModel):
+    text: str
+
+@app.post("/analyze")
+def analyze(req: SentimentRequest):
+    result = analyze_sentiment(req.text)
+    return result
