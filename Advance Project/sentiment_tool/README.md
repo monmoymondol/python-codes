@@ -16,16 +16,16 @@ Supports both **command-line usage** and a **FastAPI web API**.
 ## 📂 Project Structure
 
 
-sentiment_tool/
-├── src/
-│   ├── sentiment_analyzer.py   # core logic
-│   ├── app.py                  # FastAPI web API
-│   └── cli.py                  # command-line interface
-├── requirements.txt
-├── README.md
-└── tests/
-    └── test_sentiment.py
-
+sentiment_tool/                                                                                                                            
+├── src/                                                                                                                                      
+│   ├── sentiment_analyzer.py   # core logic                                                                                                
+│   ├── app.py                  # FastAPI web API                                                                                            
+│   └── cli.py                  # command-line interface                                                                                      
+├── requirements.txt                                                                                                                        
+├── README.md                                                                                                                                
+└── tests/                                                                                                                                    
+    └── test_sentiment.py                                                                                                                    
+                                                                                                                                            
 ---
 
 ## ⚙️ Installation
