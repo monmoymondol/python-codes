@@ -84,9 +84,26 @@ WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+```
+## 🚀 How to Run
+1. Start your backend:
 
+```bash
+uvicorn src.api:app --reload --port 8000
+```
+2. Start the frontend:
+```bash
+cd frontend/web
+npm install
+npm start
+```
+3. Open http://localhost:3000 in your browser.
+
+4. Enter a ticker (e.g., AAPL) and forecast horizon (days).
+The chart will display predicted prices.
+```
 COPY src/ ./src
 COPY data/ ./data
-
+```
 CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
