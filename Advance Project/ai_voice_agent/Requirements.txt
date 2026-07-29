@@ -1,0 +1,7 @@
+speechrecognition
+pyaudio
+gtts
+playsound
+transformers
+fastapi
+uvicorn
